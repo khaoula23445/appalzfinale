@@ -1,4 +1,4 @@
-import 'package:alzheimer_app/alzhimer_home/fitness_app_theme.dart';
+import 'package:alzheimer_app/alzhimer_home/alzhimer_app_theme.dart';
 import 'package:alzheimer_app/main.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter/material.dart';

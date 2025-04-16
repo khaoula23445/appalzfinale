@@ -1,7 +1,7 @@
 import 'package:alzheimer_app/main.dart';
 import 'package:flutter/material.dart';
 
-import '../fitness_app_theme.dart';
+import '../alzhimer_app_theme.dart';
 
 class GlassView extends StatelessWidget {
   final AnimationController? animationController;
