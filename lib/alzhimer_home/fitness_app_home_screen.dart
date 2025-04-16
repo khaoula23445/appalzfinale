@@ -1,9 +1,9 @@
-import 'package:alzheimer_app/fitness_app/models/tabIcon_data.dart';
-import 'package:alzheimer_app/fitness_app/models/tabIcon_data.dart';
-import 'package:alzheimer_app/fitness_app/my_diary/LiveLocationMap.dart';
-import 'package:alzheimer_app/fitness_app/training/GameSelectionScreen.dart';
-import 'package:alzheimer_app/fitness_app/training/MemoryQuizGame.dart';
-import 'package:alzheimer_app/fitness_app/training/training_screen.dart';
+import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/tabIcon_data.dart';
+import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/tabIcon_data.dart';
+import 'package:alzheimer_app/alzhimer_home/my_diary/LiveLocationMap.dart';
+import 'package:alzheimer_app/games/GameSelectionScreen.dart';
+import 'package:alzheimer_app/games/MemoryQuizGame.dart';
+import 'package:alzheimer_app/games/training_screen.dart';
 import 'package:flutter/material.dart';
 import 'bottom_navigation_view/bottom_bar_view.dart';
 import 'fitness_app_theme.dart';

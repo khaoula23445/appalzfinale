@@ -1,15 +1,15 @@
 import 'dart:io';
-import 'package:alzheimer_app/fitness_app/fitness_app_home_screen.dart';
+import 'package:alzheimer_app/alzhimer_home/fitness_app_home_screen.dart';
 import 'package:alzheimer_app/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 // Import your other screens here (you'll need to create these)
-import 'package:alzheimer_app/login_page.dart';
+import 'package:alzheimer_app/login/login_page.dart';
 import 'package:alzheimer_app/main_page.dart';
-import 'package:alzheimer_app/welcome_screen.dart';
-import 'package:alzheimer_app/signup_page.dart';
+import 'package:alzheimer_app/login/welcome_screen.dart';
+import 'package:alzheimer_app/login/signup_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

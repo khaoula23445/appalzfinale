@@ -1,8 +1,8 @@
-import 'package:alzheimer_app/fitness_app/bottom_navigation_view/bottom_bar_view.dart';
-import 'package:alzheimer_app/fitness_app/fitness_app_home_screen.dart';
-import 'package:alzheimer_app/fitness_app/fitness_app_theme.dart';
-import 'package:alzheimer_app/fitness_app/models/tabIcon_data.dart';
-import 'package:alzheimer_app/fitness_app/training/GameSelectionScreen.dart';
+import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/bottom_bar_view.dart';
+import 'package:alzheimer_app/alzhimer_home/fitness_app_home_screen.dart';
+import 'package:alzheimer_app/alzhimer_home/fitness_app_theme.dart';
+import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/tabIcon_data.dart';
+import 'package:alzheimer_app/games/GameSelectionScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -52,6 +52,7 @@ class _ContactPageState extends State<ContactPage>
 
   // Country data
   final List<Map<String, String>> _countries = [
+    {'code': '+213', 'flag': '🇩🇿', 'name': 'Algeria'},
     {'code': '+1', 'flag': '🇺🇸', 'name': 'United States'},
     {'code': '+44', 'flag': '🇬🇧', 'name': 'United Kingdom'},
     {'code': '+33', 'flag': '🇫🇷', 'name': 'France'},

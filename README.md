@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # alzheimer_app
 
 A new Flutter project.
@@ -14,3 +15,6 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# alzheimer_app
+>>>>>>> cb1230370105f912be9a62eb43f5d048c7ddfefc

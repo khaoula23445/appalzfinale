@@ -1,6 +1,6 @@
-import 'package:alzheimer_app/fitness_app/training/VisualPuzzleGame.dart';
-import 'package:alzheimer_app/fitness_app/training/WordCompletionGame.dart';
-import 'package:alzheimer_app/fitness_app/training/math_game.dart';
+import 'package:alzheimer_app/games/VisualPuzzleGame.dart';
+import 'package:alzheimer_app/games/WordCompletionGame.dart';
+import 'package:alzheimer_app/games/math_game.dart';
 import 'package:flutter/material.dart';
 import 'memory_card_game.dart';
 import 'color_match_game.dart';

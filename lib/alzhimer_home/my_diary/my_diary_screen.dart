@@ -1,13 +1,13 @@
-import 'package:alzheimer_app/fitness_app/ContactFormScreen.dart';
-import 'package:alzheimer_app/fitness_app/ContactSectionView.dart';
-import 'package:alzheimer_app/fitness_app/my_diary/LiveLocationMap.dart';
-import 'package:alzheimer_app/fitness_app/ui_view/body_measurement.dart';
-import 'package:alzheimer_app/fitness_app/ui_view/glass_view.dart';
-import 'package:alzheimer_app/fitness_app/ui_view/mediterranean_diet_view.dart';
-import 'package:alzheimer_app/fitness_app/ui_view/title_view.dart';
-import 'package:alzheimer_app/fitness_app/fitness_app_theme.dart';
+import 'package:alzheimer_app/contact/ContactFormScreen.dart';
+import 'package:alzheimer_app/contact/ContactSectionView.dart';
+import 'package:alzheimer_app/alzhimer_home/my_diary/LiveLocationMap.dart';
+import 'package:alzheimer_app/alzhimer_home/ui_view/body_measurement.dart';
+import 'package:alzheimer_app/alzhimer_home/ui_view/glass_view.dart';
+import 'package:alzheimer_app/alzhimer_home/ui_view/mediterranean_diet_view.dart';
+import 'package:alzheimer_app/alzhimer_home/ui_view/title_view.dart';
+import 'package:alzheimer_app/alzhimer_home/fitness_app_theme.dart';
 
-import 'package:alzheimer_app/fitness_app/my_diary/water_view.dart';
+import 'package:alzheimer_app/alzhimer_home/my_diary/water_view.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
