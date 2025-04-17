@@ -93,7 +93,7 @@ class _FitnessAppHomeScreenState extends State<FitnessAppHomeScreen>
                     break;
                   case 2:
                     tabBody =
-                        FitnessAppHomeScreen(); // Remplacez par votre écran
+                        NotificationPage(); // Remplacez par votre écran
                     break;
                   case 3:
                     tabBody =
