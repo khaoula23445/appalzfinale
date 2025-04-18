@@ -4,30 +4,22 @@ class LoginPage extends StatelessWidget {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-<<<<<<< HEAD
   // Email validation method to ensure it ends with @gmail.com
   bool _isValidGmail(String email) {
     return email.toLowerCase().endsWith('@gmail.com');
   }
 
-=======
->>>>>>> d8e37fec08c59069d54675d516c51c995811f073
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-<<<<<<< HEAD
             colors: [Color(0xFFE6F0FA), Color(0xFF1E3A8A)],
-=======
-            colors: [Color(0xFFD4145A), Color(0xFF6C0BA9)],
->>>>>>> d8e37fec08c59069d54675d516c51c995811f073
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-<<<<<<< HEAD
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -117,7 +109,9 @@ class LoginPage extends StatelessWidget {
                                   if (!_isValidGmail(email)) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text("Please enter a valid @gmail.com address"),
+                                        content: Text(
+                                          "Please enter a valid @gmail.com address",
+                                        ),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
@@ -129,7 +123,9 @@ class LoginPage extends StatelessWidget {
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF1E3A8A),
-                                  padding: const EdgeInsets.symmetric(vertical: 15),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 15,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(30),
                                   ),
@@ -158,7 +154,10 @@ class LoginPage extends StatelessWidget {
                             textAlign: TextAlign.right,
                             text: const TextSpan(
                               text: "Don’t have an account? \n",
-                              style: TextStyle(color: Colors.grey, fontSize: 16),
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 16,
+                              ),
                               children: [
                                 TextSpan(
                                   text: "Sign up",
@@ -178,100 +177,6 @@ class LoginPage extends StatelessWidget {
               ),
             ),
           ],
-=======
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Text(
-                  'Hello\nSign in!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 40),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _emailController,
-                        decoration: InputDecoration(
-                          labelText: 'Gmail',
-                          suffixIcon: Icon(Icons.check),
-                        ),
-                      ),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          suffixIcon: Icon(Icons.visibility_off),
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Text("Forgot password?"),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          gradient: LinearGradient(
-                            colors: [Color(0xFFD4145A), Color(0xFF6C0BA9)],
-                          ),
-                        ),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // Print credentials (for debugging)
-                            print(
-                              'Email: ${_emailController.text}, Password: ${_passwordController.text}',
-                            );
-
-                            // Navigate to home screen
-                            Navigator.pushReplacementNamed(context, '/home');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            padding: EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          child: Text(
-                            "SIGN IN",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20),
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/signup'),
-                  child: Text(
-                    "Don’t have account? Sign up",
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ),
-              ],
-            ),
-          ),
->>>>>>> d8e37fec08c59069d54675d516c51c995811f073
         ),
       ),
     );
