@@ -5,6 +5,9 @@ import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/tabIcon_data.
 import 'package:alzheimer_app/games/GameSelectionScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:alzheimer_app/medication/medication_page.dart';
+import 'package:alzheimer_app/safe_zone/safe_zone_page.dart';
+import 'package:alzheimer_app/bracelet/bracelet_pairing_page.dart';
 
 class ContactPage extends StatefulWidget {
   const ContactPage({Key? key}) : super(key: key);
@@ -197,9 +200,25 @@ class _ContactPageState extends State<ContactPage>
                 // Already on contacts page
                 break;
               case 3:
-                // Add your settings screen here
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => MedicationPage()),
+                );
+                break;
+              case 4:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => SafeZonePage()),
+                );
+                break;
+              case 5:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => BraceletPairingPage()),
+                );
                 break;
             }
+
           });
         });
       },

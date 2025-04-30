@@ -4,11 +4,15 @@ import 'package:alzheimer_app/alzhimer_home/my_diary/LiveLocationMap.dart';
 import 'package:alzheimer_app/games/GameSelectionScreen.dart';
 import 'package:alzheimer_app/games/MemoryQuizGame.dart';
 import 'package:alzheimer_app/games/training_screen.dart';
+import 'package:alzheimer_app/safe_zone/safe_zone_page.dart';
 import 'package:alzheimer_app/login/notification_page.dart';
 import 'package:flutter/material.dart';
+import 'package:alzheimer_app/medication/medication_page.dart';
 import 'bottom_navigation_view/bottom_bar_view.dart';
 import 'alzhimer_app_theme.dart';
 import 'my_diary/my_diary_screen.dart';
+import 'package:alzheimer_app/bracelet/bracelet_pairing_page.dart';
+
 
 class FitnessAppHomeScreen extends StatefulWidget {
   @override
@@ -80,10 +84,8 @@ class _FitnessAppHomeScreenState extends State<FitnessAppHomeScreen>
           },
           changeIndex: (int index) {
             if (!mounted) return;
-
             animationController?.reverse().then<dynamic>((data) {
               if (!mounted) return;
-
               setState(() {
                 switch (index) {
                   case 0:
@@ -93,14 +95,17 @@ class _FitnessAppHomeScreenState extends State<FitnessAppHomeScreen>
                     tabBody = GameSelectionScreen();
                     break;
                   case 2:
-                    tabBody = NotificationPage(); // Remplacez par votre écran
+                    tabBody = NotificationPage();
                     break;
                   case 3:
-                    tabBody =
-                        FitnessAppHomeScreen(); // Remplacez par votre écran
+                    tabBody = MedicationPage(); // Your medication page
                     break;
-                  default:
-                    tabBody = FitnessAppHomeScreen();
+                  case 4:
+                    tabBody = SafeZonePage(); // Your safe zone page
+                    break;
+                  case 5:
+                    tabBody = BraceletPairingPage(); // Your safe zone page
+                    break;
                 }
               });
             });
