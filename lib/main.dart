@@ -44,12 +44,12 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => WelcomeScreen(), // Your welcome screen
-        '/login': (context) => LoginPage(), // Login form
+        '/': (context) => FitnessAppHomeScreen(), // Your welcome screen
+        '/login': (context) => FitnessAppHomeScreen(), // Login form
         '/home':
             (context) =>
                 FitnessAppHomeScreen(), // Using your existing home screen
-        '/signup': (context) => SignUpPage(), // Sign up page
+        '/signup': (context) => FitnessAppHomeScreen(), // Sign up page
       },
     );
   }

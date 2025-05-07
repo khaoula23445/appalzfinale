@@ -1,6 +1,7 @@
 import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/tabIcon_data.dart';
 import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/tabIcon_data.dart';
 import 'package:alzheimer_app/alzhimer_home/my_diary/LiveLocationMap.dart';
+import 'package:alzheimer_app/alzhimer_home/prayer_times.dart';
 import 'package:alzheimer_app/games/GameSelectionScreen.dart';
 import 'package:alzheimer_app/games/MemoryQuizGame.dart';
 import 'package:alzheimer_app/games/training_screen.dart';
@@ -96,9 +97,10 @@ class _FitnessAppHomeScreenState extends State<FitnessAppHomeScreen>
                     tabBody = NotificationPage(); // Remplacez par votre écran
                     break;
                   case 3:
-                    tabBody =
-                        FitnessAppHomeScreen(); // Remplacez par votre écran
+                    tabBody = PrayerTimesPage();
+
                     break;
+
                   default:
                     tabBody = FitnessAppHomeScreen();
                 }
