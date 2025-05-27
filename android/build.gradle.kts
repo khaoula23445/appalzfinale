@@ -20,7 +20,19 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 buildscript {
+    repositories {
+        google()       // Add this
+        mavenCentral() // Add this
+    }
     dependencies {
-        classpath 'com.google.gms:google-services:4.3.15'  // Latest version
+        classpath("com.android.tools.build:gradle:8.1.0") // your android gradle plugin version
+        classpath("com.google.gms:google-services:4.3.15") // Google services plugin
+    }
+}
+
+allprojects {
+    repositories {
+        google()       // Add this too
+        mavenCentral() // Add this too
     }
 }
