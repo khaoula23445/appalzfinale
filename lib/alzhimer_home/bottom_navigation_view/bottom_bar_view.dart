@@ -95,6 +95,18 @@ class _BottomBarViewState extends State<BottomBarView>
                                 },
                               ),
                             ),
+
+                            Expanded(
+                              child: TabIcons(
+                                tabIconData: widget.tabIconsList?[2],
+                                removeAllSelect: () {
+                                  setRemoveAllSelection(
+                                    widget.tabIconsList?[2],
+                                  );
+                                  widget.changeIndex!(2);
+                                },
+                              ),
+                            ),
                             SizedBox(
                               width:
                                   Tween<double>(begin: 0.0, end: 1.0)
@@ -109,23 +121,34 @@ class _BottomBarViewState extends State<BottomBarView>
                             ),
                             Expanded(
                               child: TabIcons(
-                                tabIconData: widget.tabIconsList?[2],
-                                removeAllSelect: () {
-                                  setRemoveAllSelection(
-                                    widget.tabIconsList?[2],
-                                  );
-                                  widget.changeIndex!(2);
-                                },
-                              ),
-                            ),
-                            Expanded(
-                              child: TabIcons(
                                 tabIconData: widget.tabIconsList?[3],
                                 removeAllSelect: () {
                                   setRemoveAllSelection(
                                     widget.tabIconsList?[3],
                                   );
                                   widget.changeIndex!(3);
+                                },
+                              ),
+                            ),
+                            Expanded(
+                              child: TabIcons(
+                                tabIconData: widget.tabIconsList?[4],
+                                removeAllSelect: () {
+                                  setRemoveAllSelection(
+                                    widget.tabIconsList?[4],
+                                  );
+                                  widget.changeIndex!(4);
+                                },
+                              ),
+                            ),
+                            Expanded(
+                              child: TabIcons(
+                                tabIconData: widget.tabIconsList?[5],
+                                removeAllSelect: () {
+                                  setRemoveAllSelection(
+                                    widget.tabIconsList?[5],
+                                  );
+                                  widget.changeIndex!(5);
                                 },
                               ),
                             ),

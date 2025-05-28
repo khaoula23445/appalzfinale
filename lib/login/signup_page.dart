@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'welcome_screen.dart';
-import 'package:alzheimer_app/alzhimer_home/fitness_app_home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignUpPage extends StatefulWidget {
   @override
@@ -9,7 +9,6 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
-
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -17,47 +16,57 @@ class _SignUpPageState extends State<SignUpPage> {
   final _confirmPasswordController = TextEditingController();
 
   String? validatePhone(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your phone number';
-    }
-    final phoneRegex = RegExp(r'^(05|06|07)\d{8}$');
-    if (!phoneRegex.hasMatch(value)) {
-      return 'Enter a valid phone number (starts with 05, 06, or 07 and 10 digits)';
-    }
+    if (value == null || value.isEmpty) return 'Please enter phone number';
+    if (!RegExp(r'^(05|06|07)\d{8}$').hasMatch(value))
+      return 'Enter valid Algerian number';
     return null;
   }
 
   String? validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your email';
-    }
-    if (!value.endsWith('@gmail.com')) {
-      return 'Please enter a valid Gmail address';
-    }
+    if (value == null || value.isEmpty) return 'Please enter email';
+    if (!value.endsWith('@gmail.com')) return 'Email must be @gmail.com';
     return null;
   }
 
   String? validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your password';
-    }
-    if (value.length < 8) {
-      return 'Password must be at least 8 characters';
-    }
-    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
-      return 'Password must contain at least one special character';
-    }
+    if (value == null || value.isEmpty) return 'Enter password';
+    if (value.length < 8) return 'At least 8 characters';
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value))
+      return 'Include special character';
     return null;
   }
 
   String? validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please confirm your password';
-    }
-    if (value != _passwordController.text) {
-      return 'Passwords do not match';
-    }
+    if (value != _passwordController.text) return 'Passwords don’t match';
     return null;
+  }
+
+  Future<void> _signUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      await FirebaseFirestore.instance.collection('Users').doc(userCredential.user!.uid).set({
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'uid': userCredential.user!.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Sign up failed: $e"), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -81,10 +90,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => WelcomeScreen()),
-                    );
+                    Navigator.pop(context);
                   },
                 ),
               ),
@@ -104,158 +110,82 @@ class _SignUpPageState extends State<SignUpPage> {
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(20),
-                width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
+                  borderRadius:
+                      BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
                 ),
                 child: Form(
                   key: _formKey,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              TextFormField(
-                                controller: _nameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Full Name',
-                                  suffixIcon: Icon(Icons.person),
-                                  labelStyle: TextStyle(
-                                    color: Color(0xFF1E3A8A),
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter your full name';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 20),
-                              TextFormField(
-                                controller: _phoneController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Phone',
-                                  suffixIcon: Icon(Icons.phone),
-                                  labelStyle: TextStyle(
-                                    color: Color(0xFF1E3A8A),
-                                  ),
-                                ),
-                                keyboardType: TextInputType.phone,
-                                validator: validatePhone,
-                              ),
-                              const SizedBox(height: 20),
-                              TextFormField(
-                                controller: _emailController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Gmail',
-                                  suffixIcon: Icon(Icons.email),
-                                  labelStyle: TextStyle(
-                                    color: Color(0xFF1E3A8A),
-                                  ),
-                                ),
-                                keyboardType: TextInputType.emailAddress,
-                                validator: validateEmail,
-                              ),
-                              const SizedBox(height: 20),
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Password',
-                                  suffixIcon: Icon(Icons.lock_outline),
-                                  labelStyle: TextStyle(
-                                    color: Color(0xFF1E3A8A),
-                                  ),
-                                ),
-                                validator: validatePassword,
-                              ),
-                              const SizedBox(height: 20),
-                              TextFormField(
-                                controller: _confirmPasswordController,
-                                obscureText: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Confirm Password',
-                                  suffixIcon: Icon(Icons.lock_outline),
-                                  labelStyle: TextStyle(
-                                    color: Color(0xFF1E3A8A),
-                                  ),
-                                ),
-                                validator: validateConfirmPassword,
-                              ),
-                              const SizedBox(height: 40),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) =>
-                                                  FitnessAppHomeScreen(),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1E3A8A),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 15,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    "SIGN UP",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Full Name',
+                            suffixIcon: Icon(Icons.person),
                           ),
+                          validator: (val) =>
+                              val == null || val.isEmpty ? 'Enter name' : null,
                         ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: RichText(
-                              textAlign: TextAlign.right,
-                              text: const TextSpan(
-                                text: "Already have an account?\n",
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 16,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: "Sign In",
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _phoneController,
+                          decoration: const InputDecoration(
+                            labelText: 'Phone',
+                            suffixIcon: Icon(Icons.phone),
+                          ),
+                          keyboardType: TextInputType.phone,
+                          validator: validatePhone,
+                        ),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Gmail',
+                            suffixIcon: Icon(Icons.email),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: validateEmail,
+                        ),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Password',
+                            suffixIcon: Icon(Icons.lock),
+                          ),
+                          validator: validatePassword,
+                        ),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Confirm Password',
+                            suffixIcon: Icon(Icons.lock),
+                          ),
+                          validator: validateConfirmPassword,
+                        ),
+                        const SizedBox(height: 40),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _signUp,
+                            child: const Text("SIGN UP"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF1E3A8A),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

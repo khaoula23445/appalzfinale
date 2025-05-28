@@ -40,5 +40,17 @@ class TabIconData {
       index: 3,
       isSelected: false,
     ),
+    TabIconData(
+      icon: Icons.games_outlined,
+      selectedIcon: Icons.games_outlined,
+      index: 4,
+      isSelected: false,
+    ),
+    TabIconData(
+      icon: Icons.games_outlined,
+      selectedIcon: Icons.games_outlined,
+      index: 5,
+      isSelected: false,
+    ),
   ];
 }

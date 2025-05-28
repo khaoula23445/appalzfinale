@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "598990146660",
+    "firebase_url": "https://bracelet-app-7d36b-default-rtdb.firebaseio.com",
+    "project_id": "bracelet-app-7d36b",
+    "storage_bucket": "bracelet-app-7d36b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:598990146660:android:d8cc753eb19db2d3f8a371",
+        "android_client_info": {
+          "package_name": "com.example.alzheimer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDM4D5P0QJpYlSpEetWgGus3_9yIBFehT8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

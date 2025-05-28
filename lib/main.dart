@@ -1,22 +1,35 @@
 import 'dart:io';
-import 'package:alzheimer_app/alzhimer_home/fitness_app_home_screen.dart';
-import 'package:alzheimer_app/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-// Import your other screens here (you'll need to create these)
+// ✅ Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+import 'package:alzheimer_app/alzhimer_home/fitness_app_home_screen.dart';
+import 'package:alzheimer_app/app_theme.dart';
 import 'package:alzheimer_app/login/login_page.dart';
 import 'package:alzheimer_app/main_page.dart';
 import 'package:alzheimer_app/login/welcome_screen.dart';
 import 'package:alzheimer_app/login/signup_page.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-  ]).then((_) => runApp(MyApp()));
+  ]);
+
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -44,12 +57,12 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => FitnessAppHomeScreen(), // Your welcome screen
-        '/login': (context) => FitnessAppHomeScreen(), // Login form
+        '/': (context) => WelcomeScreen(), // Your welcome screen
+        '/login': (context) => LoginPage(), // Login form
         '/home':
             (context) =>
                 FitnessAppHomeScreen(), // Using your existing home screen
-        '/signup': (context) => FitnessAppHomeScreen(), // Sign up page
+        '/signup': (context) => SignUpPage(), // Sign up page
       },
     );
   }
@@ -61,7 +74,7 @@ class HexColor extends Color {
   static int _getColorFromHex(String hexColor) {
     hexColor = hexColor.toUpperCase().replaceAll('#', '');
     if (hexColor.length == 6) {
-      hexColor = 'FF' + hexColor;
+      hexColor = 'FF$hexColor';
     }
     return int.parse(hexColor, radix: 16);
   }

@@ -1,3 +1,4 @@
+import 'package:alzheimer_app/games/MemoryQuizGame.dart';
 import 'package:alzheimer_app/games/VisualPuzzleGame.dart';
 import 'package:alzheimer_app/games/WordCompletionGame.dart';
 import 'package:alzheimer_app/games/math_game.dart';
@@ -36,7 +37,7 @@ class GameSelectionScreen extends StatelessWidget {
                   'بطاقات الذاكرة\nCartes mémoire',
                   Icons.photo_library,
                   Colors.blue,
-                  const MemoryCardGame(),
+                  const QuizManagementPage(),
                 ),
                 _buildGameCard(
                   context,
