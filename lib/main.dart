@@ -13,7 +13,7 @@ import 'package:alzheimer_app/login/login_page.dart';
 import 'package:alzheimer_app/main_page.dart';
 import 'package:alzheimer_app/login/welcome_screen.dart';
 import 'package:alzheimer_app/login/signup_page.dart';
-
+import 'package:alzheimer_app/login/forgot_password_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -57,12 +57,20 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
+<<<<<<< HEAD
         '/': (context) => WelcomeScreen(), // Your welcome screen
         '/login': (context) => LoginPage(), // Login form
         '/home':
             (context) =>
                 FitnessAppHomeScreen(), // Using your existing home screen
         '/signup': (context) => SignUpPage(), // Sign up page
+=======
+        '/': (context) => WelcomeScreen(),
+        '/login': (context) => LoginPage(),
+        '/home': (context) => FitnessAppHomeScreen(),
+        '/signup': (context) => ManualBraceletSignupPage(),
+        '/forgot-password': (context) => ForgotPasswordPage(),
+>>>>>>> 41a3bd0d1b7cefe26d3f395d74d47d0676870313
       },
     );
   }

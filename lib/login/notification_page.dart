@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class NotificationPage extends StatefulWidget {
   @override
@@ -12,7 +13,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  final List<Map<String, String>> allNotifications = [
+  List<Map<String, String>> allNotifications = [
     {
       'title': 'New Message',
       'info': 'You received a new message from John.',
@@ -32,33 +33,15 @@ class _NotificationPageState extends State<NotificationPage> {
       'type': 'Reminder',
     },
     {
-      'title': 'Update',
-      'info': 'Check out the new design layout.',
-      'date': 'April 8, 2025',
-      'type': 'Update',
-    },
-    {
-      'title': 'Daily Tip',
-      'info': 'Take a 5-minute break every hour.',
-      'date': 'April 7, 2025',
-      'type': 'Tip',
-    },
-    {
       'title': 'Challenge',
       'info': 'Complete 10,000 steps today.',
       'date': 'April 6, 2025',
       'type': 'Challenge',
     },
-    {
-      'title': 'Promo',
-      'info': 'Get 20% off on Premium Upgrade.',
-      'date': 'April 5, 2025',
-      'type': 'Promotion',
-    },
   ];
 
   List<Map<String, String>> get filteredNotifications {
-    List<Map<String, String>> filtered = allNotifications.where((item) {
+    return allNotifications.where((item) {
       final matchSearch = item['title']!.toLowerCase().contains(_searchText.toLowerCase()) ||
           item['info']!.toLowerCase().contains(_searchText.toLowerCase());
 
@@ -68,23 +51,6 @@ class _NotificationPageState extends State<NotificationPage> {
 
       return matchSearch && matchFilter;
     }).toList();
-
-    return filtered;
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    // Example navigation logic
-    if (index == 0) {
-      Navigator.pop(context);
-    } else if (index == 2) {
-      // Navigate to Medication
-    } else if (index == 3) {
-      // Navigate to Settings
-    }
   }
 
   void _showFilterOptions() {
@@ -140,24 +106,61 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
+  void _deleteNotification(int index) {
+    setState(() {
+      allNotifications.removeAt(index);
+    });
+  }
+
+  IconData _getTypeIcon(String type) {
+    switch (type) {
+      case 'Message':
+        return Icons.message;
+      case 'Update':
+        return Icons.system_update;
+      case 'Reminder':
+        return Icons.alarm;
+      case 'Challenge':
+        return Icons.flag;
+      case 'Tip':
+        return Icons.lightbulb;
+      case 'Promotion':
+        return Icons.local_offer;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  Color _getTypeColor(String type) {
+    switch (type) {
+      case 'Message':
+        return Colors.blue.shade100;
+      case 'Update':
+        return Colors.orange.shade100;
+      case 'Reminder':
+        return Colors.purple.shade100;
+      case 'Challenge':
+        return Colors.teal.shade100;
+      case 'Tip':
+        return Colors.green.shade100;
+      case 'Promotion':
+        return Colors.red.shade100;
+      default:
+        return Colors.grey.shade200;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     appBar: AppBar(
-  title: const Text(
-    'Notifications',
-    style: TextStyle(color: Colors.white),
-  ),
-  backgroundColor: const Color(0xFF1E3A8A),
-  iconTheme: const IconThemeData(
-    color: Colors.white, // this makes the back button white
-  ),
-),
-
-
+      appBar: AppBar(
+        title: const Text('Notifications', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF1E3A8A),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      backgroundColor: const Color(0xFFF9FAFB),
       body: Column(
         children: [
-          // Search and Filter Row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -190,8 +193,6 @@ class _NotificationPageState extends State<NotificationPage> {
               ],
             ),
           ),
-
-          // Notification List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.only(bottom: 80),
@@ -199,42 +200,55 @@ class _NotificationPageState extends State<NotificationPage> {
               itemBuilder: (context, index) {
                 final item = filteredNotifications[index];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade200,
-                          blurRadius: 10,
-                          spreadRadius: 2,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Slidable(
+                    key: ValueKey(item['title']),
+                    endActionPane: ActionPane(
+                      motion: const DrawerMotion(),
+                      extentRatio: 0.25,
+                      children: [
+                        SlidableAction(
+                          onPressed: (context) => _deleteNotification(index),
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete,
+                          label: 'Delete',
                         ),
                       ],
                     ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(12),
-                     leading: const Icon(Icons.notifications, size: 40, color: Color(0xFF1E3A8A)),
-                      title: Text(
-                        item['title']!,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _getTypeColor(item['type']!),
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item['info']!),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['date']!,
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          // Handle delete
-                        },
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(12),
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.white,
+                          child: Icon(_getTypeIcon(item['type']!), color: const Color(0xFF1E3A8A)),
+                        ),
+                        title: Text(
+                          item['title']!,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item['info']!),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                item['date']!,
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -244,7 +258,6 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF5F5F5),
     );
   }
 }
