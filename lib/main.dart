@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:alzheimer_app/login/PatientHomePage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -57,20 +58,20 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-<<<<<<< HEAD
-        '/': (context) => WelcomeScreen(), // Your welcome screen
-        '/login': (context) => LoginPage(), // Login form
-        '/home':
-            (context) =>
-                FitnessAppHomeScreen(), // Using your existing home screen
-        '/signup': (context) => SignUpPage(), // Sign up page
-=======
         '/': (context) => WelcomeScreen(),
         '/login': (context) => LoginPage(),
-        '/home': (context) => FitnessAppHomeScreen(),
+
+        '/home': (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
+          return PatientHomePage(
+            patientId: args['patientId'],
+            patientData: args['patientData'],
+          );
+        },
         '/signup': (context) => ManualBraceletSignupPage(),
         '/forgot-password': (context) => ForgotPasswordPage(),
->>>>>>> 41a3bd0d1b7cefe26d3f395d74d47d0676870313
       },
     );
   }

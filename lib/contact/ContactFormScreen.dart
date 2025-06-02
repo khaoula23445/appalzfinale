@@ -125,12 +125,13 @@ class _ContactPageState extends State<ContactPage>
         'label': _labelController.text.trim(),
         'priority': _priority ?? 'Low',
         'createdAt': FieldValue.serverTimestamp(),
-        'patientId': _patientId,
-        'patientName': _patientName,
       };
 
+      // Save to patient's contacts subcollection
       await FirebaseFirestore.instance
-          .collection('TrustedContacts')
+          .collection('patients')
+          .doc(_patientId)
+          .collection('contacts')
           .add(contact);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -186,7 +187,9 @@ class _ContactPageState extends State<ContactPage>
   Future<void> _deleteContact(String contactId) async {
     try {
       await FirebaseFirestore.instance
-          .collection('TrustedContacts')
+          .collection('patients')
+          .doc(_patientId)
+          .collection('contacts')
           .doc(contactId)
           .delete();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -210,8 +213,8 @@ class _ContactPageState extends State<ContactPage>
     return SingleChildScrollView(
       padding: _defaultPadding,
       child: Card(
-        color: Colors.white, // White card background
-        elevation: 4, // Card shadow
+        color: Colors.white,
+        elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_borderRadius),
         ),
@@ -246,13 +249,7 @@ class _ContactPageState extends State<ContactPage>
                   controller: _nameController,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: const Color.fromARGB(
-                      255,
-                      238,
-                      238,
-                      238,
-                    ), // White input background
-
+                    fillColor: const Color.fromARGB(255, 238, 238, 238),
                     labelText: "Full Name",
                     labelStyle: TextStyle(color: _textSecondary),
                     border: OutlineInputBorder(
@@ -274,12 +271,7 @@ class _ContactPageState extends State<ContactPage>
                   controller: _phoneController,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: const Color.fromARGB(
-                      255,
-                      238,
-                      238,
-                      238,
-                    ), // White input background
+                    fillColor: const Color.fromARGB(255, 238, 238, 238),
                     labelText: "Phone Number",
                     labelStyle: TextStyle(color: _textSecondary),
                     border: OutlineInputBorder(
@@ -301,13 +293,7 @@ class _ContactPageState extends State<ContactPage>
                   controller: _labelController,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: const Color.fromARGB(
-                      255,
-                      238,
-                      238,
-                      238,
-                    ), // White input background
-
+                    fillColor: const Color.fromARGB(255, 238, 238, 238),
                     labelText: "Label (e.g. Mom, Friend)",
                     labelStyle: TextStyle(color: _textSecondary),
                     border: OutlineInputBorder(
@@ -330,12 +316,7 @@ class _ContactPageState extends State<ContactPage>
                   value: _priority,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: const Color.fromARGB(
-                      255,
-                      238,
-                      238,
-                      238,
-                    ), // White input background
+                    fillColor: const Color.fromARGB(255, 238, 238, 238),
                     labelText: "Priority Level",
                     labelStyle: TextStyle(color: _textSecondary),
                     border: OutlineInputBorder(
@@ -437,8 +418,11 @@ class _ContactPageState extends State<ContactPage>
           child: StreamBuilder<QuerySnapshot>(
             stream:
                 FirebaseFirestore.instance
-                    .collection('TrustedContacts')
-                    .where('patientId', isEqualTo: _patientId)
+                    .collection('patients')
+                    .doc(_patientId)
+                    .collection('contacts')
+                    .orderBy('priority')
+                    .orderBy('name')
                     .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
@@ -481,23 +465,6 @@ class _ContactPageState extends State<ContactPage>
                     final data = doc.data() as Map<String, dynamic>;
                     return data['priority'] == _filterPriority;
                   }).toList();
-
-              // Sort contacts
-              contacts.sort((a, b) {
-                final aData = a.data() as Map<String, dynamic>;
-                final bData = b.data() as Map<String, dynamic>;
-
-                // First sort by priority
-                final priorityOrder = {'High': 1, 'Medium': 2, 'Low': 3};
-                final aPriority = priorityOrder[aData['priority']] ?? 4;
-                final bPriority = priorityOrder[bData['priority']] ?? 4;
-                if (aPriority != bPriority) {
-                  return aPriority.compareTo(bPriority);
-                }
-
-                // Then sort by name
-                return (aData['name'] ?? '').compareTo(bData['name'] ?? '');
-              });
 
               return Column(
                 children: [
@@ -719,8 +686,9 @@ class ContactSearchDelegate extends SearchDelegate {
     return StreamBuilder<QuerySnapshot>(
       stream:
           FirebaseFirestore.instance
-              .collection('TrustedContacts')
-              .where('patientId', isEqualTo: patientId)
+              .collection('patients')
+              .doc(patientId)
+              .collection('contacts')
               .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
