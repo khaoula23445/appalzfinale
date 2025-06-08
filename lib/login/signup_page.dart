@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class ManualBraceletSignupPage extends StatefulWidget {
   @override
@@ -298,71 +299,76 @@ class _ManualBraceletSignupPageState extends State<ManualBraceletSignupPage> {
   }
 
   Widget buildStep1() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Padding(
+        padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+        child: Text(
+          'Bracelet Signup\nStep 1: Scan Bracelet QR Code',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      const SizedBox(height: 20),
+      Expanded(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(40),
+              topRight: Radius.circular(40),
+            ),
+          ),
+          child: QRView(
+            key: qrKey,
+            onQRViewCreated: (QRViewController controller) {
+              controller.scannedDataStream.listen((scanData) {
+                // Once scanned, pause camera & proceed to check bracelet ID
+                controller.pauseCamera();
+                final scannedId = scanData.code;
+                if (scannedId != null && scannedId.isNotEmpty) {
+                  setState(() {
+                    braceletIdController.text = scannedId;
+                    error = null;
+                  });
+                  checkBraceletId();
+                } else {
+                  setState(() {
+                    error = "Invalid QR code";
+                  });
+                  controller.resumeCamera();
+                }
+              });
+            },
+            overlay: QrScannerOverlayShape(
+              borderColor: Colors.blue,
+              borderRadius: 10,
+              borderLength: 30,
+              borderWidth: 10,
+              cutOutSize: 250,
+            ),
+          ),
+        ),
+      ),
+      if (error != null)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           child: Text(
-            'Bracelet Signup\nStep 1: Enter Bracelet ID',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            error!,
+            style: const TextStyle(color: Colors.red, fontSize: 16),
           ),
         ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(40),
-                topRight: Radius.circular(40)),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  buildTextField(braceletIdController, 'Bracelet ID'),
-                  const SizedBox(height: 30),
-                  if (error != null)
-                    Text(
-                      error!,
-                      style: const TextStyle(color: Colors.red, fontSize: 16),
-                    ),
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: checkBraceletId,
-                      child: const Text(
-                        "CONTINUE",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E3A8A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      const SizedBox(height: 20),
+    ],
+  );
+}
 
   Widget buildStep2() {
     return Column(

@@ -48,7 +48,7 @@ dependencies:
   cloud_firestore: ^4.13.5
   qr_code_scanner: ^0.6.0
   uuid: ^4.3.3
-
+  firebase_database: ^10.4.0
   
   percent_indicator: ^4.2.2
   path_provider: ^2.1.1 

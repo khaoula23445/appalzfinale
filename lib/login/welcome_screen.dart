@@ -138,23 +138,28 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 50),
               const Text(
-                "Login with Social Media",
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 15),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.camera_alt, color: Colors.white),
-                  const SizedBox(width: 20),
-                  const Icon(Icons.facebook, color: Colors.white),
-                  const SizedBox(width: 20),
-                  GestureDetector(
-                    onTap: () => _signInWithGoogle(context),
-                    child: const Icon(Icons.email, color: Colors.white),
-                  ),
-                ],
-              ),
+  "Login with Social Media",
+  style: TextStyle(color: Colors.white70),
+),
+const SizedBox(height: 15),
+Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    GestureDetector(
+  onTap: () => _signInWithGoogle(context), // This triggers the Google sign-in UI
+  child: const Icon(Icons.email, color: Colors.white, size: 30),
+),
+
+    const SizedBox(width: 30),
+    GestureDetector(
+      onTap: () {
+        // TODO: Implement Apple/iCloud Sign-In
+      },
+      child: const Icon(Icons.apple, color: Colors.white, size: 34),
+    ),
+  ],
+),
+
             ],
           ),
         ),

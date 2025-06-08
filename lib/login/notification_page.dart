@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:intl/intl.dart';
 
 class NotificationPage extends StatefulWidget {
   @override
@@ -7,50 +9,93 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  int _selectedIndex = 1;
+  final _searchController = TextEditingController();
   String _searchText = '';
   String _filterOption = 'None';
+  String _selectedTypeFilter = '';
 
-  final TextEditingController _searchController = TextEditingController();
+  final DatabaseReference _dbRef =
+      FirebaseDatabase.instance.ref().child('bracelet-sensors');
 
-  List<Map<String, String>> allNotifications = [
-    {
-      'title': 'New Message',
-      'info': 'You received a new message from John.',
-      'date': 'April 12, 2025',
-      'type': 'Message',
-    },
-    {
-      'title': 'App Update',
-      'info': 'Version 2.0.1 is now available.',
-      'date': 'April 10, 2025',
-      'type': 'Update',
-    },
-    {
-      'title': 'Reminder',
-      'info': 'Drink water and walk for 10 mins.',
-      'date': 'April 9, 2025',
-      'type': 'Reminder',
-    },
-    {
-      'title': 'Challenge',
-      'info': 'Complete 10,000 steps today.',
-      'date': 'April 6, 2025',
-      'type': 'Challenge',
-    },
-  ];
+  List<Map<String, String>> _notifications = [];
+  Map<String, bool> _previousStates = {
+    'fall_detected': false,
+    'fire_detected': false,
+    'touch_detected': false,
+    'button_pressed': false,
+  };
 
-  List<Map<String, String>> get filteredNotifications {
-    return allNotifications.where((item) {
-      final matchSearch = item['title']!.toLowerCase().contains(_searchText.toLowerCase()) ||
+  @override
+  void initState() {
+    super.initState();
+    _listenToSensorChanges();
+  }
+
+  void _listenToSensorChanges() {
+    _dbRef.onValue.listen((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      final now = DateFormat('MMMM d, yyyy – h:mm a').format(DateTime.now());
+
+      final alertTypes = {
+        'fall_detected': {
+          'title': 'Fall Detected',
+          'info': 'Maybe the patient has fallen! Please check him/her',
+          'type': 'Fall'
+        },
+        'fire_detected': {
+          'title': 'Fire Detected',
+          'info': 'Possible fire near patient!',
+          'type': 'Fire'
+        },
+        'touch_detected': {
+          'title': 'Touch Detected',
+          'info': 'Touch alert triggered.',
+          'type': 'Touch'
+        },
+        'button_pressed': {
+          'title': 'Emergency Button Pressed',
+          'info': 'Patient pressed the emergency button.',
+          'type': 'Button'
+        },
+      };
+
+      alertTypes.forEach((key, value) {
+        bool current = data[key] == true;
+        bool previous = _previousStates[key] ?? false;
+
+        if (!previous && current) {
+          setState(() {
+            _notifications.insert(0, {
+              'title': value['title']!,
+              'info': value['info']!,
+              'type': value['type']!,
+              'date': now,
+            });
+          });
+        }
+
+        _previousStates[key] = current;
+      });
+    });
+  }
+
+  List<Map<String, String>> get _filteredNotifications {
+    return _notifications.where((item) {
+      final matchesSearch = item['title']!.toLowerCase().contains(_searchText.toLowerCase()) ||
           item['info']!.toLowerCase().contains(_searchText.toLowerCase());
 
-      final matchFilter = _filterOption == 'None' ||
-          (_filterOption == 'Date' && item['date'] != null) ||
-          (_filterOption == 'Type' && item['type'] != null);
+      final matchesType = _filterOption != 'Type' || _selectedTypeFilter.isEmpty
+          ? true
+          : item['type'] == _selectedTypeFilter;
 
-      return matchSearch && matchFilter;
+      return matchesSearch && matchesType;
     }).toList();
+  }
+
+  void _deleteNotification(int index) {
+    setState(() {
+      _notifications.removeAt(index);
+    });
   }
 
   void _showFilterOptions() {
@@ -64,30 +109,16 @@ class _NotificationPageState extends State<NotificationPage> {
         child: Wrap(
           children: [
             const Center(
-              child: Text(
-                "Filter Options",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
+              child: Text("Filter Options",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             ),
             const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.date_range),
-              title: const Text("Filter by Date"),
-              onTap: () {
-                setState(() {
-                  _filterOption = 'Date';
-                });
-                Navigator.pop(context);
-              },
-            ),
             ListTile(
               leading: const Icon(Icons.category),
               title: const Text("Filter by Type"),
               onTap: () {
-                setState(() {
-                  _filterOption = 'Type';
-                });
                 Navigator.pop(context);
+                _showTypeFilterOptions();
               },
             ),
             ListTile(
@@ -96,6 +127,7 @@ class _NotificationPageState extends State<NotificationPage> {
               onTap: () {
                 setState(() {
                   _filterOption = 'None';
+                  _selectedTypeFilter = '';
                 });
                 Navigator.pop(context);
               },
@@ -106,26 +138,61 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
-  void _deleteNotification(int index) {
-    setState(() {
-      allNotifications.removeAt(index);
-    });
+  void _showTypeFilterOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Wrap(
+          children: [
+            const Center(
+              child: Text("Select Alert Type",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ),
+            const SizedBox(height: 20),
+            ...['Fall', 'Fire', 'Touch', 'Button'].map((type) {
+              return ListTile(
+                leading: Icon(_getTypeIcon(type)),
+                title: Text(type),
+                onTap: () {
+                  setState(() {
+                    _filterOption = 'Type';
+                    _selectedTypeFilter = type;
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+            ListTile(
+              leading: const Icon(Icons.clear),
+              title: const Text("Clear Type Filter"),
+              onTap: () {
+                setState(() {
+                  _filterOption = 'None';
+                  _selectedTypeFilter = '';
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   IconData _getTypeIcon(String type) {
     switch (type) {
-      case 'Message':
-        return Icons.message;
-      case 'Update':
-        return Icons.system_update;
-      case 'Reminder':
-        return Icons.alarm;
-      case 'Challenge':
-        return Icons.flag;
-      case 'Tip':
-        return Icons.lightbulb;
-      case 'Promotion':
-        return Icons.local_offer;
+      case 'Fall':
+        return Icons.warning;
+      case 'Fire':
+        return Icons.local_fire_department;
+      case 'Touch':
+        return Icons.touch_app;
+      case 'Button':
+        return Icons.emergency;
       default:
         return Icons.notifications;
     }
@@ -133,18 +200,14 @@ class _NotificationPageState extends State<NotificationPage> {
 
   Color _getTypeColor(String type) {
     switch (type) {
-      case 'Message':
-        return Colors.blue.shade100;
-      case 'Update':
+      case 'Fall':
         return Colors.orange.shade100;
-      case 'Reminder':
-        return Colors.purple.shade100;
-      case 'Challenge':
-        return Colors.teal.shade100;
-      case 'Tip':
-        return Colors.green.shade100;
-      case 'Promotion':
+      case 'Fire':
         return Colors.red.shade100;
+      case 'Touch':
+        return Colors.green.shade100;
+      case 'Button':
+        return Colors.blue.shade100;
       default:
         return Colors.grey.shade200;
     }
@@ -154,7 +217,8 @@ class _NotificationPageState extends State<NotificationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Notifications', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF1E3A8A),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -178,11 +242,7 @@ class _NotificationPageState extends State<NotificationPage> {
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _searchText = value;
-                      });
-                    },
+                    onChanged: (value) => setState(() => _searchText = value),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -196,11 +256,12 @@ class _NotificationPageState extends State<NotificationPage> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.only(bottom: 80),
-              itemCount: filteredNotifications.length,
+              itemCount: _filteredNotifications.length,
               itemBuilder: (context, index) {
-                final item = filteredNotifications[index];
+                final item = _filteredNotifications[index];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Slidable(
                     key: ValueKey(item['title']),
                     endActionPane: ActionPane(
@@ -225,26 +286,28 @@ class _NotificationPageState extends State<NotificationPage> {
                         contentPadding: const EdgeInsets.all(12),
                         leading: CircleAvatar(
                           backgroundColor: Colors.white,
-                          child: Icon(_getTypeIcon(item['type']!), color: const Color(0xFF1E3A8A)),
+                          child: Icon(_getTypeIcon(item['type']!),
+                              color: const Color(0xFF1E3A8A)),
                         ),
-                        title: Text(
-                          item['title']!,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                        title: Text(item['title']!,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(item['info']!),
                             const SizedBox(height: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 item['date']!,
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey),
                               ),
                             ),
                           ],
