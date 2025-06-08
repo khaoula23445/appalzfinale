@@ -1,18 +1,17 @@
 import 'package:alzheimer_app/alzhimer_home/alzhimer_app_theme.dart';
 import 'package:alzheimer_app/main.dart';
-import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math' as math;
 
-class MediterranesnDietView extends StatelessWidget {
+class BatteryView extends StatelessWidget {
   final AnimationController? animationController;
   final Animation<double>? animation;
 
-  const MediterranesnDietView({
-    Key? key,
-    this.animationController,
-    this.animation,
-  }) : super(key: key);
+  const BatteryView({Key? key, this.animationController, this.animation})
+    : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -91,19 +90,25 @@ class MediterranesnDietView extends StatelessWidget {
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState ==
                                               ConnectionState.waiting) {
-                                            return CircularProgressIndicator();
+                                            return Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            );
                                           }
                                           if (snapshot.hasError) {
                                             return Text(
                                               'Error loading battery info',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
                                             );
                                           }
 
                                           final batteryLevel =
                                               snapshot.data?['level'] ?? 0;
-                                          final batteryStatus =
-                                              snapshot.data?['status'] ??
-                                              'unknown';
+                                          final isCharging =
+                                              snapshot.data?['isCharging'] ??
+                                              false;
 
                                           return Row(
                                             children: [
@@ -114,7 +119,7 @@ class MediterranesnDietView extends StatelessWidget {
                                                       CrossAxisAlignment.start,
                                                   children: <Widget>[
                                                     Text(
-                                                      'Battery',
+                                                      'Bracelet Battery',
                                                       style: TextStyle(
                                                         fontFamily:
                                                             FitnessAppTheme
@@ -148,35 +153,29 @@ class MediterranesnDietView extends StatelessWidget {
                                                           ),
                                                         ),
                                                         SizedBox(width: 4),
-                                                        Text(
-                                                          _getStatusText(
-                                                            batteryStatus,
+                                                        if (isCharging)
+                                                          Text(
+                                                            'Charging',
+                                                            style: TextStyle(
+                                                              fontFamily:
+                                                                  FitnessAppTheme
+                                                                      .fontName,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12,
+                                                              letterSpacing:
+                                                                  -0.2,
+                                                              color:
+                                                                  Colors.green,
+                                                            ),
                                                           ),
-                                                          style: TextStyle(
-                                                            fontFamily:
-                                                                FitnessAppTheme
-                                                                    .fontName,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            fontSize: 12,
-                                                            letterSpacing: -0.2,
-                                                            color:
-                                                                FitnessAppTheme
-                                                                    .grey
-                                                                    .withOpacity(
-                                                                      0.5,
-                                                                    ),
-                                                          ),
-                                                        ),
                                                       ],
                                                     ),
                                                   ],
                                                 ),
                                               ),
-                                              // Add more spacing here to move circle left
-                                              SizedBox(
-                                                width: 32,
-                                              ), // Increased from 16 to 32
+                                              SizedBox(width: 32),
                                               // Battery Circle
                                               Container(
                                                 width: 60,
@@ -185,23 +184,18 @@ class MediterranesnDietView extends StatelessWidget {
                                                   painter: _BatteryLevelPainter(
                                                     level: batteryLevel,
                                                     baseColor: _getBaseColor(
-                                                      batteryStatus,
                                                       batteryLevel,
+                                                      isCharging,
                                                     ),
                                                     glowColor: _getGlowColor(
-                                                      batteryStatus,
                                                       batteryLevel,
+                                                      isCharging,
                                                     ),
-                                                    isCharging:
-                                                        batteryStatus ==
-                                                        BatteryState.charging,
+                                                    isCharging: isCharging,
                                                   ),
                                                 ),
                                               ),
-                                              // Add this empty SizedBox to prevent the circle from going to extreme right
-                                              SizedBox(
-                                                width: 16,
-                                              ), // Additional space on the right
+                                              SizedBox(width: 16),
                                             ],
                                           );
                                         },
@@ -225,38 +219,67 @@ class MediterranesnDietView extends StatelessWidget {
     );
   }
 
-  Color _getBaseColor(BatteryState status, int level) {
-    if (status == BatteryState.charging) return Colors.green;
-    if (level < 20) return Colors.red;
-    if (level < 40) return Colors.orange;
+  Color _getBaseColor(int level, bool isCharging) {
+    if (isCharging) return Colors.green;
+    if (level < 10) return Colors.red;
+    if (level < 50) return Colors.orange;
     return Colors.green;
   }
 
-  Color _getGlowColor(BatteryState status, int level) {
-    if (status == BatteryState.charging) return Colors.lightGreenAccent;
-    if (level < 20) return Colors.redAccent;
-    if (level < 40) return Colors.orangeAccent;
+  Color _getGlowColor(int level, bool isCharging) {
+    if (isCharging) return Colors.lightGreenAccent;
+    if (level < 10) return Colors.redAccent;
+    if (level < 50) return Colors.orangeAccent;
     return Colors.lightGreenAccent;
   }
 
-  String _getStatusText(BatteryState status) {
-    switch (status) {
-      case BatteryState.charging:
-        return 'Charging';
-      case BatteryState.discharging:
-        return 'Discharging';
-      case BatteryState.full:
-        return 'Full';
-      default:
-        return 'Unknown';
-    }
-  }
-
   Future<Map<String, dynamic>> _getBatteryData() async {
-    final battery = Battery();
-    final level = await battery.batteryLevel;
-    final status = await battery.batteryState;
-    return {'level': level, 'status': status};
+    try {
+      // 1. Get current user
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        return {'level': 0, 'isCharging': false};
+      }
+
+      // 2. Query patient document where assistantId matches current user UID
+      final patientQuery =
+          await FirebaseFirestore.instance
+              .collection('patients')
+              .where('assistantId', isEqualTo: user.uid)
+              .limit(1)
+              .get();
+
+      if (patientQuery.docs.isEmpty) {
+        return {'level': 0, 'isCharging': false};
+      }
+
+      final patientData = patientQuery.docs.first.data();
+      final braceletId = patientData['braceletId'] as String?;
+
+      if (braceletId == null || braceletId.isEmpty) {
+        return {'level': 0, 'isCharging': false};
+      }
+
+      // 3. Get bracelet document
+      final braceletDoc =
+          await FirebaseFirestore.instance
+              .collection('Bracelets')
+              .doc(braceletId)
+              .get();
+
+      if (!braceletDoc.exists) {
+        return {'level': 0, 'isCharging': false};
+      }
+
+      final braceletData = braceletDoc.data();
+      final batteryLevel = braceletData?['batterylevel'] as int? ?? 0;
+      final isCharging = braceletData?['charging'] as bool? ?? false;
+
+      return {'level': batteryLevel, 'isCharging': isCharging};
+    } catch (e) {
+      print('Error fetching battery data: $e');
+      return {'level': 0, 'isCharging': false};
+    }
   }
 }
 
@@ -275,9 +298,9 @@ class _BatteryLevelPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final strokeWidth = 10.0; // Thicker stroke for curved appearance
+    final strokeWidth = 10.0;
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width / 2) * 0.9; // Larger radius
+    final radius = (size.width / 2) * 0.9;
 
     // Background circle
     final backgroundPaint =
@@ -297,7 +320,7 @@ class _BatteryLevelPainter extends CustomPainter {
           ..color = baseColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth
-          ..strokeCap = StrokeCap.round; // This creates the curved ends
+          ..strokeCap = StrokeCap.round;
 
     if (isCharging) {
       arcPaint.shader = SweepGradient(

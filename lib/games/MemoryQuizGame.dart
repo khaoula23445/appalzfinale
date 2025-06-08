@@ -1,533 +1,815 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'dart:math';
-import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/animation.dart';
 
-class CognitiveGamesMenu extends StatelessWidget {
-  const CognitiveGamesMenu({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Cognitive Games'), centerTitle: true),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          children: [
-            _GameCard(
-              title: 'Memory Sequence',
-              icon: Icons.memory,
-              color: Colors.blue,
-              onTap:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MemorySequenceGame(),
-                    ),
-                  ),
-            ),
-            _GameCard(
-              title: 'Word Recall',
-              icon: Icons.text_fields,
-              color: Colors.green,
-              onTap:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const WordRecallGame(),
-                    ),
-                  ),
-            ),
-            _GameCard(
-              title: 'Object Match',
-              icon: Icons.image_search,
-              color: Colors.orange,
-              onTap:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ObjectMatchGame(),
-                    ),
-                  ),
-            ),
-            _GameCard(
-              title: 'Daily Questions',
-              icon: Icons.quiz,
-              color: Colors.purple,
-              onTap:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DailyQuestionsGame(),
-                    ),
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GameCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _GameCard({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
+class QuizManagementPage extends StatefulWidget {
+  const QuizManagementPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 50, color: color),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  State<QuizManagementPage> createState() => _QuizManagementPageState();
 }
 
-// Game 1: Memory Sequence Game
-class MemorySequenceGame extends StatefulWidget {
-  const MemorySequenceGame({Key? key}) : super(key: key);
+class _QuizManagementPageState extends State<QuizManagementPage>
+    with SingleTickerProviderStateMixin {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  @override
-  _MemorySequenceGameState createState() => _MemorySequenceGameState();
-}
+  String? patientId;
+  bool isLoading = true;
+  String? errorMessage;
+  late TabController _tabController;
 
-class _MemorySequenceGameState extends State<MemorySequenceGame> {
-  int level = 1;
-  List<int> sequence = [];
-  List<int> userInput = [];
-  bool showingSequence = true;
-  int displayIndex = 0;
-  Timer? timer;
+  // Custom color scheme
+  final Color primaryColor = const Color(0xFF1E3A8A);
+  final Color backgroundColor = const Color.fromARGB(255, 242, 241, 241);
 
   @override
   void initState() {
     super.initState();
-    startGame();
+    _tabController = TabController(length: 2, vsync: this);
+    _fetchPatientId();
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    _tabController.dispose();
     super.dispose();
   }
 
-  void startGame() {
-    setState(() {
-      sequence = List.generate(2 + level, (_) => Random().nextInt(4));
-      userInput = [];
-      showingSequence = true;
-      displayIndex = 0;
-      showSequence();
-    });
-  }
+  Future<void> _fetchPatientId() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        setState(() {
+          errorMessage = 'User not authenticated';
+          isLoading = false;
+        });
+        return;
+      }
 
-  void showSequence() {
-    timer = Timer.periodic(const Duration(milliseconds: 1000), (t) {
+      final patientQuery =
+          await _firestore
+              .collection('patients')
+              .where('assistantId', isEqualTo: user.uid)
+              .limit(1)
+              .get();
+
+      if (patientQuery.docs.isEmpty) {
+        setState(() {
+          errorMessage = 'No patient assigned';
+          isLoading = false;
+        });
+        return;
+      }
+
       setState(() {
-        if (displayIndex < sequence.length) {
-          displayIndex++;
-        } else {
-          t.cancel();
-          showingSequence = false;
-        }
+        patientId = patientQuery.docs.first.id;
+        isLoading = false;
       });
-    });
-  }
-
-  void handleButtonPress(int index) {
-    if (showingSequence) return;
-
-    setState(() {
-      userInput.add(index);
-
-      if (userInput.length == sequence.length) {
-        bool correct = true;
-        for (int i = 0; i < sequence.length; i++) {
-          if (userInput[i] != sequence[i]) {
-            correct = false;
-            break;
-          }
-        }
-
-        if (correct) {
-          level++;
-          startGame();
-        } else {
-          userInput = [];
-        }
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Memory Sequence')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Level: $level', style: const TextStyle(fontSize: 24)),
-            const SizedBox(height: 20),
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 2,
-              childAspectRatio: 1,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              children: List.generate(4, (index) {
-                bool shouldHighlight =
-                    showingSequence &&
-                    displayIndex > 0 &&
-                    sequence[displayIndex - 1] == index;
-
-                return GestureDetector(
-                  onTap: () => handleButtonPress(index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    decoration: BoxDecoration(
-                      color:
-                          shouldHighlight
-                              ? Colors.primaries[index].withOpacity(0.8)
-                              : Colors.primaries[index].withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                );
-              }),
-            ),
-            if (showingSequence)
-              const Padding(
-                padding: EdgeInsets.only(top: 20),
-                child: Text('Watch the sequence...'),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Game 2: Word Recall Game
-class WordRecallGame extends StatefulWidget {
-  const WordRecallGame({Key? key}) : super(key: key);
-
-  @override
-  _WordRecallGameState createState() => _WordRecallGameState();
-}
-
-class _WordRecallGameState extends State<WordRecallGame> {
-  final List<String> words = ['Apple', 'Sun', 'Tree', 'Book', 'Water'];
-  List<String> shownWords = [];
-  List<String> userAnswers = [];
-  bool showWords = true;
-  int score = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    startRound();
-  }
-
-  void startRound() {
-    setState(() {
-      shownWords = List.from(words)..shuffle();
-      userAnswers = [];
-      showWords = true;
-      Future.delayed(const Duration(seconds: 5), () {
-        setState(() => showWords = false);
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error loading patient: ${e.toString()}';
+        isLoading = false;
       });
-    });
-  }
-
-  void checkAnswer(String word) {
-    setState(() {
-      if (words.contains(word) && !userAnswers.contains(word)) {
-        userAnswers.add(word);
-        if (userAnswers.length == words.length) {
-          score++;
-          startRound();
-        }
-      }
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Word Recall')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Score: $score', style: const TextStyle(fontSize: 24)),
-            const SizedBox(height: 20),
-            if (showWords)
-              Column(
-                children:
-                    shownWords
-                        .map(
-                          (word) =>
-                              Text(word, style: const TextStyle(fontSize: 24)),
-                        )
-                        .toList(),
-              )
-            else
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children:
-                    words
-                        .map(
-                          (word) => ElevatedButton(
-                            onPressed: () => checkAnswer(word),
-                            child: Text(word),
-                          ),
-                        )
-                        .toList(),
+    return Theme(
+      data: ThemeData(
+        primaryColor: primaryColor,
+        colorScheme: ColorScheme.light(
+          primary: primaryColor,
+          secondary: primaryColor.withOpacity(0.8),
+          surface: backgroundColor,
+          background: backgroundColor,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          centerTitle: true,
+        ),
+        tabBarTheme: TabBarTheme(
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withOpacity(0.7),
+          indicator: UnderlineTabIndicator(
+            borderSide: BorderSide(width: 3, color: Colors.white),
+          ),
+        ),
+        cardTheme: CardTheme(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          color: Colors.white,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.grey[50],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        appBar: AppBar(
+          title: const Text('Quiz Management'),
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(icon: Icon(Icons.add_circle_outline), text: 'Create Quiz'),
+              Tab(
+                icon: Icon(Icons.manage_search_outlined),
+                text: 'Manage Quizzes',
               ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-// Game 3: Object Match Game
-class ObjectMatchGame extends StatefulWidget {
-  const ObjectMatchGame({Key? key}) : super(key: key);
-
-  @override
-  _ObjectMatchGameState createState() => _ObjectMatchGameState();
-}
-
-class _ObjectMatchGameState extends State<ObjectMatchGame> {
-  final List<String> objects = ['🐶', '🐱', '🍎', '🚗', '🏠', '🌳'];
-  List<String> gameObjects = [];
-  String? selectedObject;
-  int? selectedIndex;
-  int pairsFound = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    startGame();
-  }
-
-  void startGame() {
-    setState(() {
-      gameObjects =
-          List.from(objects)
-            ..addAll(objects)
-            ..shuffle();
-      selectedObject = null;
-      selectedIndex = null;
-      pairsFound = 0;
-    });
-  }
-
-  void handleTap(int index) {
-    if (gameObjects[index] == '✓' || selectedIndex == index) return;
-
-    setState(() {
-      if (selectedObject == null) {
-        selectedObject = gameObjects[index];
-        selectedIndex = index;
-      } else {
-        if (selectedObject == gameObjects[index]) {
-          gameObjects[selectedIndex!] = '✓';
-          gameObjects[index] = '✓';
-          pairsFound++;
-        }
-        selectedObject = null;
-        selectedIndex = null;
-
-        if (pairsFound == objects.length) {
-          Future.delayed(const Duration(seconds: 1), startGame);
-        }
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Object Match')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Pairs Found: $pairsFound/${objects.length}',
-              style: const TextStyle(fontSize: 24),
-            ),
-            const SizedBox(height: 20),
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 3,
-              children: List.generate(gameObjects.length, (index) {
-                return GestureDetector(
-                  onTap: () => handleTap(index),
-                  child: Card(
-                    child: Center(
-                      child: Text(
-                        gameObjects[index],
-                        style: const TextStyle(fontSize: 32),
-                      ),
+        body:
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : errorMessage != null
+                ? Center(child: Text(errorMessage!))
+                : patientId == null
+                ? const Center(child: Text('No patient assigned'))
+                : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    AddQuizTab(
+                      patientId: patientId!,
+                      primaryColor: primaryColor,
                     ),
-                  ),
-                );
-              }),
-            ),
-          ],
-        ),
+                    ManageQuizzesTab(
+                      patientId: patientId!,
+                      primaryColor: primaryColor,
+                    ),
+                  ],
+                ),
       ),
     );
   }
 }
 
-// Game 4: Daily Questions Game
-class DailyQuestionsGame extends StatefulWidget {
-  const DailyQuestionsGame({Key? key}) : super(key: key);
+class AddQuizTab extends StatefulWidget {
+  final String patientId;
+  final Color primaryColor;
+
+  const AddQuizTab({
+    Key? key,
+    required this.patientId,
+    required this.primaryColor,
+  }) : super(key: key);
 
   @override
-  _DailyQuestionsGameState createState() => _DailyQuestionsGameState();
+  State<AddQuizTab> createState() => _AddQuizTabState();
 }
 
-class _DailyQuestionsGameState extends State<DailyQuestionsGame> {
-  final List<Map<String, dynamic>> questions = [
-    {
-      'question': 'What day is today?',
-      'answers': ['Monday', 'Tuesday', 'Wednesday', 'Thursday'],
-      'correct': DateTime.now().weekday - 1, // 0-based index
-    },
-    {
-      'question': 'What season is it?',
-      'answers': ['Spring', 'Summer', 'Fall', 'Winter'],
-      'correct': (DateTime.now().month % 12 / 3).floor(), // 0-3
-    },
-    {
-      'question': 'What color is a banana?',
-      'answers': ['Red', 'Yellow', 'Blue', 'Green'],
-      'correct': 1,
-    },
+class _AddQuizTabState extends State<AddQuizTab>
+    with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
+  final List<QuizQuestion> _questions = [];
+  final TextEditingController _questionController = TextEditingController();
+  final List<TextEditingController> _answerControllers = [
+    TextEditingController(),
+    TextEditingController(),
+    TextEditingController(),
+    TextEditingController(),
   ];
+  int? _correctIndex;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
-  int currentQuestion = 0;
-  int? selectedAnswer;
-  int score = 0;
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
+  }
 
-  void checkAnswer() {
-    if (selectedAnswer == questions[currentQuestion]['correct']) {
-      setState(() => score++);
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _questionController.dispose();
+    for (var controller in _answerControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addQuestion() {
+    if (_formKey.currentState == null) return;
+
+    if (_formKey.currentState!.validate() && _correctIndex != null) {
+      setState(() {
+        _questions.add(
+          QuizQuestion(
+            question: _questionController.text,
+            answers: _answerControllers.map((c) => c.text).toList(),
+            correctIndex: _correctIndex!,
+          ),
+        );
+
+        // Reset form
+        _questionController.clear();
+        for (var controller in _answerControllers) {
+          controller.clear();
+        }
+        _correctIndex = null;
+        _formKey.currentState!.reset();
+      });
+
+      // Play animation
+      _animationController.reset();
+      _animationController.forward();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Please fill all fields and select correct answer',
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _submitAllQuestions() async {
+    if (_questions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No questions to submit'),
+          backgroundColor: widget.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
     }
 
-    if (currentQuestion < questions.length - 1) {
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      final quizzesRef = FirebaseFirestore.instance
+          .collection('patients')
+          .doc(widget.patientId)
+          .collection('quizzes');
+
+      for (var question in _questions) {
+        batch.set(quizzesRef.doc(), {
+          'question': question.question,
+          'answers': question.answers,
+          'correctIndex': question.correctIndex,
+          'active': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${_questions.length} questions added successfully'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+
       setState(() {
-        currentQuestion++;
-        selectedAnswer = null;
+        _questions.clear();
       });
-    } else {
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Quiz Complete!'),
-              content: Text('Your score: $score/${questions.length}'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      currentQuestion = 0;
-                      score = 0;
-                      selectedAnswer = null;
-                    });
-                  },
-                  child: const Text('Restart'),
-                ),
-              ],
-            ),
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error adding questions: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Daily Questions')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                questions[currentQuestion]['question'],
-                style: const TextStyle(fontSize: 24),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Column(
-                children: List.generate(
-                  questions[currentQuestion]['answers'].length,
-                  (index) => RadioListTile<int>(
-                    title: Text(
-                      questions[currentQuestion]['answers'][index],
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    value: index,
-                    groupValue: selectedAnswer,
-                    onChanged: (value) {
-                      setState(() => selectedAnswer = value);
-                    },
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Form Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Text(
+                        'Create New Question',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: widget.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _questionController,
+                        decoration: InputDecoration(
+                          labelText: 'Question',
+                          prefixIcon: Icon(
+                            Icons.help_outline,
+                            color: widget.primaryColor,
+                          ),
+                        ),
+                        validator:
+                            (value) =>
+                                value == null || value.isEmpty
+                                    ? 'Enter a question'
+                                    : null,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Answers',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: widget.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ...List.generate(
+                        4,
+                        (index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _answerControllers[index],
+                                  decoration: InputDecoration(
+                                    labelText: 'Option ${index + 1}',
+                                    prefixIcon: Icon(
+                                      Icons.circle_outlined,
+                                      color: widget.primaryColor,
+                                    ),
+                                  ),
+                                  validator:
+                                      (value) =>
+                                          value == null || value.isEmpty
+                                              ? 'Enter option ${index + 1}'
+                                              : null,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              IconButton(
+                                icon: Icon(
+                                  _correctIndex == index
+                                      ? Icons.check_circle
+                                      : Icons.radio_button_unchecked,
+                                  color:
+                                      _correctIndex == index
+                                          ? widget.primaryColor
+                                          : Colors.grey,
+                                ),
+                                onPressed: () {
+                                  setState(() => _correctIndex = index);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: _addQuestion,
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Add to Batch',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: selectedAnswer != null ? checkAnswer : null,
-                child: const Text('Submit Answer'),
+            ),
+            const SizedBox(height: 24),
+            // Batch Preview Section
+            if (_questions.isNotEmpty) ...[
+              Text(
+                'Questions Batch (${_questions.length})',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: widget.primaryColor,
+                ),
               ),
-              const SizedBox(height: 20),
-              Text('Score: $score', style: const TextStyle(fontSize: 20)),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      ..._questions.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final question = entry.value;
+                        return Dismissible(
+                          key: Key('question-$index'),
+                          background: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red[100],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            child: const Icon(Icons.delete, color: Colors.red),
+                          ),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (direction) async {
+                            return await showDialog(
+                              context: context,
+                              builder:
+                                  (context) => AlertDialog(
+                                    title: const Text('Remove Question?'),
+                                    content: const Text(
+                                      'Are you sure you want to remove this question from the batch?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        child: const Text('Cancel'),
+                                        onPressed:
+                                            () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                      ),
+                                      TextButton(
+                                        child: const Text(
+                                          'Remove',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                        onPressed:
+                                            () =>
+                                                Navigator.of(context).pop(true),
+                                      ),
+                                    ],
+                                  ),
+                            );
+                          },
+                          onDismissed: (direction) {
+                            setState(() => _questions.removeAt(index));
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              leading: CircleAvatar(
+                                backgroundColor: widget.primaryColor
+                                    .withOpacity(0.1),
+                                child: Text(
+                                  '${index + 1}',
+                                  style: TextStyle(color: widget.primaryColor),
+                                ),
+                              ),
+                              title: Text(
+                                question.question,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Correct: ${question.answers[question.correctIndex]}',
+                                style: TextStyle(color: widget.primaryColor),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: _submitAllQuestions,
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cloud_upload, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Submit All Questions',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );
   }
+}
+
+class ManageQuizzesTab extends StatelessWidget {
+  final String patientId;
+  final Color primaryColor;
+
+  const ManageQuizzesTab({
+    Key? key,
+    required this.patientId,
+    required this.primaryColor,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('patients')
+              .doc(patientId)
+              .collection('quizzes')
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error loading quizzes: ${snapshot.error}'),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator(color: primaryColor));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.quiz_outlined,
+                  size: 48,
+                  color: primaryColor.withOpacity(0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No quizzes found',
+                  style: TextStyle(color: primaryColor.withOpacity(0.7)),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final quizzes = snapshot.data!.docs;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: quizzes.length,
+          itemBuilder: (context, index) {
+            final quiz = quizzes[index];
+            final data = quiz.data() as Map<String, dynamic>;
+            final question = data['question'] ?? 'No question text';
+            final answers = List<String>.from(data['answers'] ?? []);
+            final correctIndex = data['correctIndex'] as int? ?? 0;
+            final isActive = data['active'] as bool? ?? true;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder:
+                        (context) => Dialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  question,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ...answers.asMap().entries.map((entry) {
+                                  final idx = entry.key;
+                                  final answer = entry.value;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 8.0),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          idx == correctIndex
+                                              ? Icons.check_circle
+                                              : Icons.circle_outlined,
+                                          color:
+                                              idx == correctIndex
+                                                  ? Colors.green
+                                                  : primaryColor.withOpacity(
+                                                    0.5,
+                                                  ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            answer,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                                const SizedBox(height: 24),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton(
+                                      child: const Text('Close'),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              question,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Switch(
+                            value: isActive,
+                            activeColor: primaryColor,
+                            onChanged: (value) {
+                              quiz.reference.update({'active': value});
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Chip(
+                            label: Text(
+                              'Correct: ${answers.length > correctIndex ? answers[correctIndex] : 'N/A'}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: primaryColor,
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            color: Colors.red,
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: const Text('Delete Quiz?'),
+                                      content: const Text(
+                                        'This action cannot be undone.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          child: const Text('Cancel'),
+                                          onPressed:
+                                              () => Navigator.pop(context),
+                                        ),
+                                        TextButton(
+                                          child: const Text(
+                                            'Delete',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                          onPressed: () {
+                                            quiz.reference.delete();
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: const Text(
+                                                  'Quiz deleted',
+                                                ),
+                                                backgroundColor: primaryColor,
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class QuizQuestion {
+  final String question;
+  final List<String> answers;
+  final int correctIndex;
+
+  QuizQuestion({
+    required this.question,
+    required this.answers,
+    required this.correctIndex,
+  });
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:alzheimer_app/login/PatientHomePage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -20,9 +21,10 @@ import 'package:alzheimer_app/login/forgot_password_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+        await Firebase.initializeApp(
+        options:DefaultFirebaseOptions.currentPlatform
+      );
+
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -59,15 +61,13 @@ class MyApp extends StatelessWidget {
         platform: TargetPlatform.iOS,
       ),
       initialRoute: '/',
-      routes: <String, WidgetBuilder>{
-  '/': (context) => const WelcomeScreen(),
-  '/login': (context) => LoginPage(),
-  '/home': (context) => FitnessAppHomeScreen(),
-  '/signup': (context) => ManualBraceletSignupPage(),
-  '/forgot-password': (context) => ForgotPasswordPage(),
-  '/google-sign-in': (context) => const GoogleSignInPage(),
-},
-
+      routes: {
+        '/': (context) => WelcomeScreen(),
+        '/login': (context) => LoginPage(),
+        '/home': (context) => FitnessAppHomeScreen(),
+        '/signup': (context) => ManualBraceletSignupPage(),
+        '/forgot-password': (context) => ForgotPasswordPage(),
+      },
     );
   }
 }

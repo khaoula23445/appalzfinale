@@ -3,7 +3,7 @@ import 'package:alzheimer_app/contact/ContactSectionView.dart';
 import 'package:alzheimer_app/alzhimer_home/my_diary/LiveLocationMap.dart';
 import 'package:alzheimer_app/alzhimer_home/ui_view/body_measurement.dart';
 import 'package:alzheimer_app/alzhimer_home/ui_view/glass_view.dart';
-import 'package:alzheimer_app/alzhimer_home/ui_view/mediterranean_diet_view.dart';
+import 'package:alzheimer_app/alzhimer_home/ui_view/Battery.dart';
 import 'package:alzheimer_app/alzhimer_home/ui_view/title_view.dart';
 import 'package:alzheimer_app/alzhimer_home/alzhimer_app_theme.dart';
 
@@ -135,7 +135,7 @@ class _MyDiaryScreenState extends State<MyDiaryScreen>
       ),
     );
     listViews.add(
-      MediterranesnDietView(
+      BatteryView(
         animation: Tween<double>(begin: 0.0, end: 1.0).animate(
           CurvedAnimation(
             parent: widget.animationController!,

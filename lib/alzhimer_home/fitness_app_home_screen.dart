@@ -1,6 +1,7 @@
 import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/tabIcon_data.dart';
 import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/tabIcon_data.dart';
 import 'package:alzheimer_app/alzhimer_home/my_diary/LiveLocationMap.dart';
+import 'package:alzheimer_app/alzhimer_home/prayer_times.dart';
 import 'package:alzheimer_app/games/GameSelectionScreen.dart';
 import 'package:alzheimer_app/games/MemoryQuizGame.dart';
 import 'package:alzheimer_app/games/training_screen.dart';
@@ -12,7 +13,6 @@ import 'bottom_navigation_view/bottom_bar_view.dart';
 import 'alzhimer_app_theme.dart';
 import 'my_diary/my_diary_screen.dart';
 import 'package:alzheimer_app/bracelet/bracelet_pairing_page.dart';
-
 
 class FitnessAppHomeScreen extends StatefulWidget {
   @override
@@ -98,14 +98,11 @@ class _FitnessAppHomeScreenState extends State<FitnessAppHomeScreen>
                     tabBody = NotificationPage();
                     break;
                   case 3:
-                    tabBody = MedicationPage(); // Your medication page
+                    tabBody =
+                        FitnessAppHomeScreen(); // Remplacez par votre écran
                     break;
-                  case 4:
-                    tabBody = SafeZonePage(); // Your safe zone page
-                    break;
-                  case 5:
-                    tabBody = BraceletPairingPage(); // Your safe zone page
-                    break;
+                  default:
+                    tabBody = FitnessAppHomeScreen();
                 }
               });
             });
