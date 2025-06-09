@@ -184,35 +184,18 @@ class _PatientSelectionPageState extends State<PatientSelectionPage>
 
   @override
   Widget build(BuildContext context) {
-    final List<Color> _cardColors = [
-      Colors.blue.shade100,
-      Colors.green.shade100,
-      Colors.purple.shade100,
-      Colors.orange.shade100,
-      Colors.teal.shade100,
-      Colors.pink.shade100,
-    ];
-
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F0FA),
-      appBar: AppBar(
-        title: const Text(
-          'Select a Patient',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: const Color(0xFF1E3A8A),
-        elevation: 0,
-      ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchPatients(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      backgroundColor: const Color(0xFFEEF2F8),
+      body: Column(
+        children: [
+          getAppBarUI(),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _fetchPatients(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(
@@ -225,71 +208,85 @@ class _PatientSelectionPageState extends State<PatientSelectionPage>
 
                 final patients = snapshot.data!;
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: patients.length,
-            itemBuilder: (context, index) {
-              final patient = patients[index];
-
-              return GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacementNamed(
-                    context,
-                    '/home',
-                    arguments: patient,
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 30,
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF1E3A8A),
-                      radius: 28,
-                      child: const Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    title: Text(
-                      patient['fullName'] ?? 'Unnamed',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E3A8A),
-                      ),
-                    ),
-                    subtitle: Text(
-                      "Age: ${patient['age'] ?? 'N/A'}",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.black45,
-                      size: 20,
-                    ),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 30,
+                    runSpacing: 30,
+                    children:
+                        patients.map((patient) {
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                '/home',
+                                arguments: {
+                                  'patientId': patient['id'],
+                                  'patientData': patient,
+                                },
+                              );
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: 130,
+                              height: 160,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 12,
+                                    offset: Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const CircleAvatar(
+                                    radius: 30,
+                                    backgroundColor: Color(0xFF1E3A8A),
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 30,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    patient['fullName'] ?? 'Unnamed',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1E3A8A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Age: ${patient['age'] ?? 'N/A'}",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
                   ),
-                ),
-              );
-            },
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
