@@ -1,12 +1,12 @@
 import 'package:alzheimer_app/alzhimer_home/bottom_navigation_view/patient_bottom_navigation_bar.dart';
-import 'package:alzheimer_app/contact/ContactFormScreen.dart';
+
 import 'package:alzheimer_app/contact/PatientContactsPage.dart';
 import 'package:alzheimer_app/games/MemoryQuizGame.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:alzheimer_app/alzhimer_home/alzhimer_app_theme.dart';
-import 'package:alzheimer_app/alzhimer_home/my_diary/LiveLocationMap.dart';
+import 'package:alzheimer_app/alzhimer_home/location/LiveLocationMap.dart';
 import 'package:intl/intl.dart';
 
 class PatientHomePage extends StatefulWidget {

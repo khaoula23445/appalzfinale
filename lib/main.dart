@@ -7,8 +7,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 // ✅ Firebase
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-
-import 'package:alzheimer_app/alzhimer_home/fitness_app_home_screen.dart';
 import 'package:alzheimer_app/app_theme.dart';
 import 'package:alzheimer_app/login/login_page.dart';
 import 'package:alzheimer_app/main_page.dart';
