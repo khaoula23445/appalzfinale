@@ -24,8 +24,8 @@ class WelcomeScreen extends StatelessWidget {
         idToken: googleAuth.idToken,
       );
 
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithCredential(credential);
 
       final user = userCredential.user;
       if (user != null) {
@@ -43,9 +43,9 @@ class WelcomeScreen extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Google sign in failed: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Google sign in failed: $e")));
     }
   }
 
@@ -67,7 +67,7 @@ class WelcomeScreen extends StatelessWidget {
               const Icon(Icons.watch, size: 60, color: Colors.white),
               const SizedBox(height: 10),
               const Text(
-                "Safe Bracelet",
+                "Maah Bracelet",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 22,
@@ -138,28 +138,38 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 50),
               const Text(
-  "Login with Social Media",
-  style: TextStyle(color: Colors.white70),
-),
-const SizedBox(height: 15),
-Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    GestureDetector(
-  onTap: () => _signInWithGoogle(context), // This triggers the Google sign-in UI
-  child: const Icon(Icons.email, color: Colors.white, size: 30),
-),
+                "Login with Social Media",
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap:
+                        () => _signInWithGoogle(
+                          context,
+                        ), // This triggers the Google sign-in UI
+                    child: const Icon(
+                      Icons.email,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
 
-    const SizedBox(width: 30),
-    GestureDetector(
-      onTap: () {
-        // TODO: Implement Apple/iCloud Sign-In
-      },
-      child: const Icon(Icons.apple, color: Colors.white, size: 34),
-    ),
-  ],
-),
-
+                  const SizedBox(width: 30),
+                  GestureDetector(
+                    onTap: () {
+                      // TODO: Implement Apple/iCloud Sign-In
+                    },
+                    child: const Icon(
+                      Icons.apple,
+                      color: Colors.white,
+                      size: 34,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

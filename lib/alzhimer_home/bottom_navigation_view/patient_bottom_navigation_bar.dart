@@ -1,4 +1,7 @@
 import 'package:alzheimer_app/alzhimer_home/quize/PatientQuizPage.dart';
+import 'package:alzheimer_app/alzhimer_home/quize/TakeQuizPage.dart';
+import 'package:alzheimer_app/safe_zone/DoorAlertPage.dart';
+import 'package:alzheimer_app/safe_zone/GpsHistoryPage.dart';
 import 'package:alzheimer_app/settigns/SettingsPage.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
@@ -232,26 +235,6 @@ class PatientBottomNavigationBar extends StatelessWidget {
                   patientName: patientName,
                 ),
           ),
-        );
-        break;
-      case 4:
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-          ),
-          builder:
-              (context) => SizedBox(
-                height:
-                    MediaQuery.of(context).size.height *
-                    0.9, // almost fullscreen
-                child: SettingsPage(
-                  patientName: 'John Doe',
-                  patientAge: '75',
-                  patientCondition: 'Alzheimer\'s',
-                ),
-              ),
         );
         break;
     }

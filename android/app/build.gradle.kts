@@ -1,3 +1,6 @@
+import org.gradle.kotlin.dsl.dependencies
+
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -9,11 +12,12 @@ plugins {
 android {
     namespace = "com.example.alzheimer_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.2.12479018"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -39,9 +43,11 @@ android {
         }
     }
 }
+dependencies {
+    add("coreLibraryDesugaring", "com.android.tools:desugar_jdk_libs:2.0.4")
+}
+
 
 flutter {
     source = "../.."
 }
-apply plugin: 'com.google.gms.google-services'
-

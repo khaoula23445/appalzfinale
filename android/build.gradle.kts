@@ -27,6 +27,9 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:8.1.0") // your android gradle plugin version
         classpath("com.google.gms:google-services:4.3.15") // Google services plugin
+          // ✅ Ajoute cette ligne pour le core library desugaring
+      
+
     }
 }
 

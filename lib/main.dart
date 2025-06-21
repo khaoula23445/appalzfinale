@@ -68,7 +68,7 @@ class MyApp extends StatelessWidget {
             patientData: args['patientData'],
           );
         },
-        '/signup': (context) => ManualBraceletSignupPage(),
+
         '/forgot-password': (context) => ForgotPasswordPage(),
       },
     );

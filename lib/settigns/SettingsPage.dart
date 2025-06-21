@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:alzheimer_app/alzhimer_home/alzhimer_app_theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class SettingsPage extends StatefulWidget {
-  final String patientName;
-  final String patientAge;
-  final String patientCondition;
+  final AnimationController? animationController;
+  final String patientId;
 
   const SettingsPage({
     Key? key,
-    required this.patientName,
-    required this.patientAge,
-    required this.patientCondition,
+    this.animationController,
+    required this.patientId,
   }) : super(key: key);
 
   @override
@@ -18,37 +18,369 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage>
-    with SingleTickerProviderStateMixin {
-  bool _notificationsEnabled = true;
-  bool _darkModeEnabled = false;
-  String _language = 'English';
-  String _fontSize = 'Medium';
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  // Consistent radius values
-  final double _cardRadius = 16.0;
-  final double _buttonRadius = 12.0;
-  final double _inputRadius = 12.0;
-  final double _avatarRadius = 24.0;
-  final double _dialogRadius = 24.0;
+  late Animation<double> _animation;
+  Animation<double>? topBarAnimation;
+  double topBarOpacity = 0.0;
+  late ScrollController scrollController;
+  Map<String, dynamic>? patientData;
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _fullNameController;
+  late TextEditingController _ageController;
+  late TextEditingController _locationController;
+  late TextEditingController _medicalNotesController;
+  late TextEditingController _braceletIdController;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
-      duration: const Duration(milliseconds: 500),
     );
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.fastOutSlowIn,
+      ),
     );
+
+    topBarAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(0, 0.5, curve: Curves.fastOutSlowIn),
+      ),
+    );
+
+    scrollController = ScrollController()..addListener(_handleScroll);
     _animationController.forward();
+
+    // Initialize controllers
+    _fullNameController = TextEditingController();
+    _ageController = TextEditingController();
+    _locationController = TextEditingController();
+    _medicalNotesController = TextEditingController();
+    _braceletIdController = TextEditingController();
+
+    // Fetch patient data when the page loads
+    _fetchPatientData();
+  }
+
+  Future<void> _fetchPatientData() async {
+    try {
+      DocumentSnapshot doc =
+          await FirebaseFirestore.instance
+              .collection('patients')
+              .doc(widget.patientId)
+              .get();
+
+      if (doc.exists) {
+        setState(() {
+          patientData = doc.data() as Map<String, dynamic>;
+          // Update controllers with fetched data
+          _fullNameController.text = patientData!['fullName'] ?? '';
+          _ageController.text = patientData!['age']?.toString() ?? '';
+          _locationController.text = patientData!['location'] ?? '';
+          _medicalNotesController.text = patientData!['medicalNotes'] ?? '';
+          _braceletIdController.text = patientData!['braceletId'] ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error fetching patient data: $e');
+    }
+  }
+
+  Future<void> _updatePatientData() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('patients')
+            .doc(widget.patientId)
+            .update({
+              'fullName': _fullNameController.text,
+              'age': int.tryParse(_ageController.text) ?? 0,
+              'location': _locationController.text,
+              'medicalNotes': _medicalNotesController.text,
+              'braceletId': _braceletIdController.text,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+
+        // Refresh the data
+        await _fetchPatientData();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Patient information updated successfully'),
+          ),
+        );
+
+        Navigator.pop(context); // Close the dialog
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating patient information: $e')),
+        );
+      }
+    }
+  }
+
+  void _showPatientInfoDialog() {
+    if (patientData == null) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: FitnessAppTheme.white,
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Patient Information',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: FitnessAppTheme.nearlyDarkBlue,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close, color: FitnessAppTheme.grey),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Form Content
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildEditableField('Full Name', _fullNameController),
+                        const SizedBox(height: 12),
+                        _buildEditableField(
+                          'Age',
+                          _ageController,
+                          isNumber: true,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildEditableField('Location', _locationController),
+                        const SizedBox(height: 12),
+                        _buildEditableField(
+                          'Medical Notes',
+                          _medicalNotesController,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildEditableField(
+                          'Bracelet ID',
+                          _braceletIdController,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildReadOnlyField(
+                          'Created At',
+                          patientData!['createdAt'] != null
+                              ? DateFormat('dd MMM yyyy').format(
+                                (patientData!['createdAt'] as Timestamp)
+                                    .toDate(),
+                              )
+                              : 'N/A',
+                        ),
+                        if (patientData!['updatedAt'] != null) ...[
+                          const SizedBox(height: 12),
+                          _buildReadOnlyField(
+                            'Last Updated',
+                            DateFormat('dd MMM yyyy').format(
+                              (patientData!['updatedAt'] as Timestamp).toDate(),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Action Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: FitnessAppTheme.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _updatePatientData,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: FitnessAppTheme.nearlyDarkBlue,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEditableField(
+    String label,
+    TextEditingController controller, {
+    bool isNumber = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: FitnessAppTheme.nearlyDarkBlue,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey[100],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+          style: TextStyle(color: FitnessAppTheme.darkerText, fontSize: 16),
+          keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter $label';
+            }
+            if (isNumber && int.tryParse(value) == null) {
+              return 'Please enter a valid number';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReadOnlyField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: FitnessAppTheme.nearlyDarkBlue,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            value,
+            style: TextStyle(color: FitnessAppTheme.darkerText, fontSize: 16),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleScroll() {
+    if (scrollController.offset >= 24) {
+      if (topBarOpacity != 1.0) {
+        setState(() => topBarOpacity = 1.0);
+      }
+    } else if (scrollController.offset <= 24 && scrollController.offset >= 0) {
+      if (topBarOpacity != scrollController.offset / 24) {
+        setState(() => topBarOpacity = scrollController.offset / 24);
+      }
+    } else if (scrollController.offset <= 0) {
+      if (topBarOpacity != 0.0) {
+        setState(() => topBarOpacity = 0.0);
+      }
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    scrollController.dispose();
+    _fullNameController.dispose();
+    _ageController.dispose();
+    _locationController.dispose();
+    _medicalNotesController.dispose();
+    _braceletIdController.dispose();
     super.dispose();
   }
 
@@ -56,296 +388,401 @@ class _SettingsPageState extends State<SettingsPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitnessAppTheme.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 220,
-            pinned: true,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(_cardRadius),
-              ),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      FitnessAppTheme.nearlyDarkBlue,
-                      FitnessAppTheme.nearlyDarkBlue.withOpacity(0.7),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(_cardRadius),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 30),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Hero(
-                        tag: 'profile-avatar',
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(_avatarRadius),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(_avatarRadius),
-                            child: Container(
-                              width: 84,
-                              height: 84,
-                              color: Colors.white.withOpacity(0.2),
-                              child: Icon(
-                                Icons.person,
-                                size: 42,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      Text(
-                        widget.patientName,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${widget.patientAge} years | ${widget.patientCondition}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+      body: Stack(
+        children: <Widget>[
+          SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              children: [
+                SizedBox(height: MediaQuery.of(context).padding.top + 100),
+                const SizedBox(height: 24),
+                _buildAccountCard(),
+                const SizedBox(height: 24),
+                _buildPreferencesCard(),
+                const SizedBox(height: 24),
+                _buildOtherSettingsCard(),
+                const SizedBox(height: 24),
+                const SizedBox(height: 80),
+              ],
             ),
           ),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              const SizedBox(height: 8),
-              _buildSectionHeader('APPEARANCE'),
-              _buildSettingItem(
-                icon: Icons.dark_mode_outlined,
-                title: 'Dark Mode',
-                subtitle: 'Switch between light and dark theme',
-                trailing: Transform.scale(
-                  scale: 0.8,
-                  child: Switch(
-                    value: _darkModeEnabled,
-                    onChanged: (value) {
-                      setState(() => _darkModeEnabled = value);
-                    },
-                    activeColor: FitnessAppTheme.nearlyDarkBlue,
-                    activeTrackColor: FitnessAppTheme.nearlyDarkBlue
-                        .withOpacity(0.4),
-                  ),
-                ),
-              ),
-              _buildSettingItem(
-                icon: Icons.text_fields_rounded,
-                title: 'Font Size',
-                subtitle: 'Adjust the text size',
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(_inputRadius),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _fontSize,
-                      borderRadius: BorderRadius.circular(_inputRadius),
-                      icon: const Icon(Icons.arrow_drop_down),
-                      elevation: 0,
-                      style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                        fontSize: 14,
-                      ),
-                      items:
-                          ['Small', 'Medium', 'Large'].map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                                child: Text(value),
-                              ),
-                            );
-                          }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _fontSize = value);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              _buildSectionHeader('PREFERENCES'),
-              _buildSettingItem(
-                icon: Icons.notifications_active_outlined,
-                title: 'Notifications',
-                subtitle: 'Enable or disable app notifications',
-                trailing: Transform.scale(
-                  scale: 0.8,
-                  child: Switch(
-                    value: _notificationsEnabled,
-                    onChanged: (value) {
-                      setState(() => _notificationsEnabled = value);
-                    },
-                    activeColor: FitnessAppTheme.nearlyDarkBlue,
-                    activeTrackColor: FitnessAppTheme.nearlyDarkBlue
-                        .withOpacity(0.4),
-                  ),
-                ),
-              ),
-              _buildSettingItem(
-                icon: Icons.translate_rounded,
-                title: 'Language',
-                subtitle: 'Change app language',
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(_inputRadius),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _language,
-                      borderRadius: BorderRadius.circular(_inputRadius),
-                      icon: const Icon(Icons.arrow_drop_down),
-                      elevation: 0,
-                      style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                        fontSize: 14,
-                      ),
-                      items:
-                          ['English', 'French', 'Spanish', 'Arabic'].map((
-                            String value,
-                          ) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                                child: Text(value),
-                              ),
-                            );
-                          }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _language = value);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              _buildSectionHeader('ACCOUNT'),
-              _buildSettingItem(
-                icon: Icons.person_outline_rounded,
-                title: 'Edit Profile',
-                subtitle: 'Update your personal information',
-                onTap: () => _showEditProfileDialog(),
-              ),
-              _buildSettingItem(
-                icon: Icons.security_rounded,
-                title: 'Privacy & Security',
-                subtitle: 'Manage your data and security settings',
-              ),
-              _buildSettingItem(
-                icon: Icons.help_center_rounded,
-                title: 'Help & Support',
-                subtitle: 'Get help or contact support',
-              ),
-              _buildSectionHeader('ABOUT'),
-              _buildSettingItem(
-                icon: Icons.info_outline_rounded,
-                title: 'About App',
-                subtitle: 'Version 1.0.0',
-              ),
-              _buildSettingItem(
-                icon: Icons.star_border_rounded,
-                title: 'Rate Us',
-                subtitle: 'Share your feedback',
-              ),
-              _buildSettingItem(
-                icon: Icons.logout_rounded,
-                title: 'Logout',
-                textColor: Colors.redAccent,
-                iconColor: Colors.redAccent,
-                subtitle: 'Sign out of your account',
-                onTap: () => _showLogoutConfirmation(),
-              ),
-              const SizedBox(height: 40),
-            ]),
-          ),
+          getAppBarUI(),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade600,
-            letterSpacing: 1.2,
-          ),
+  Widget getAppBarUI() {
+    return Column(
+      children: <Widget>[
+        AnimatedBuilder(
+          animation: _animationController,
+          builder: (BuildContext context, Widget? child) {
+            return FadeTransition(
+              opacity: topBarAnimation!,
+              child: Transform(
+                transform: Matrix4.translationValues(
+                  0.0,
+                  30 * (1.0 - topBarAnimation!.value),
+                  0.0,
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: FitnessAppTheme.white.withOpacity(topBarOpacity),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(32.0),
+                    ),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: FitnessAppTheme.grey.withOpacity(
+                          0.4 * topBarOpacity,
+                        ),
+                        offset: const Offset(1.1, 1.1),
+                        blurRadius: 10.0,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: <Widget>[
+                      SizedBox(height: MediaQuery.of(context).padding.top),
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 16 - 8.0 * topBarOpacity,
+                          bottom: 12 - 8.0 * topBarOpacity,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  'Settings',
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(
+                                    fontFamily: FitnessAppTheme.fontName,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 22 + 6 - 6 * topBarOpacity,
+                                    letterSpacing: 1.2,
+                                    color: FitnessAppTheme.darkerText,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 38,
+                              height: 38,
+                              child: InkWell(
+                                highlightColor: Colors.transparent,
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(32.0),
+                                ),
+                                onTap: () {},
+                                child: Center(
+                                  child: Icon(
+                                    Icons.keyboard_arrow_right,
+                                    color: FitnessAppTheme.grey,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildAccountCard() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (BuildContext context, Widget? child) {
+        return FadeTransition(
+          opacity: _animation,
+          child: Transform(
+            transform: Matrix4.translationValues(
+              0.0,
+              30 * (1.0 - _animation.value),
+              0.0,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: FitnessAppTheme.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8.0),
+                    bottomLeft: Radius.circular(8.0),
+                    bottomRight: Radius.circular(8.0),
+                    topRight: Radius.circular(68.0),
+                  ),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: FitnessAppTheme.grey.withOpacity(0.2),
+                      offset: const Offset(1.1, 1.1),
+                      blurRadius: 10.0,
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: FitnessAppTheme.nearlyBlue,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Account',
+                            style: TextStyle(
+                              fontFamily: FitnessAppTheme.fontName,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                              color: FitnessAppTheme.nearlyDarkBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      const Divider(height: 1, indent: 72),
+                      _buildSettingItem(
+                        icon: Icons.medical_services_outlined,
+                        title: "Patient Info",
+                        subtitle: "View and edit patient details",
+                        color: FitnessAppTheme.nearlyDarkBlue,
+                        onTap: _showPatientInfoDialog,
+                      ),
+                      const Divider(height: 1, indent: 72),
+                      _buildSettingItem(
+                        icon: Icons.lock_outline,
+                        title: "Change Password",
+                        subtitle: "Manage your account security",
+                        color: FitnessAppTheme.nearlyBlue,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPreferencesCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (BuildContext context, Widget? child) {
+        return FadeTransition(
+          opacity: _animation,
+          child: Transform(
+            transform: Matrix4.translationValues(
+              0.0,
+              30 * (1.0 - _animation.value),
+              0.0,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: FitnessAppTheme.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8.0),
+                    bottomLeft: Radius.circular(8.0),
+                    bottomRight: Radius.circular(8.0),
+                    topRight: Radius.circular(68.0),
+                  ),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: FitnessAppTheme.grey.withOpacity(0.2),
+                      offset: const Offset(1.1, 1.1),
+                      blurRadius: 10.0,
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: FitnessAppTheme.nearlyDarkBlue,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Preferences',
+                            style: TextStyle(
+                              fontFamily: FitnessAppTheme.fontName,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                              color: FitnessAppTheme.nearlyDarkBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        secondary: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: FitnessAppTheme.nearlyDarkBlue.withOpacity(
+                              0.1,
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.dark_mode_outlined,
+                            color: FitnessAppTheme.nearlyDarkBlue,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          'Dark Mode',
+                          style: TextStyle(
+                            fontFamily: FitnessAppTheme.fontName,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            color: FitnessAppTheme.nearlyDarkBlue,
+                          ),
+                        ),
+                        value: isDarkMode,
+                        onChanged: (value) {
+                          // Implement theme switching
+                        },
+                      ),
+                      const Divider(height: 1, indent: 72),
+                      _buildSettingItem(
+                        icon: Icons.language_outlined,
+                        title: "Language",
+                        subtitle: "English (US)",
+                        color: FitnessAppTheme.nearlyBlue,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOtherSettingsCard() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (BuildContext context, Widget? child) {
+        return FadeTransition(
+          opacity: _animation,
+          child: Transform(
+            transform: Matrix4.translationValues(
+              0.0,
+              30 * (1.0 - _animation.value),
+              0.0,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: FitnessAppTheme.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8.0),
+                    bottomLeft: Radius.circular(8.0),
+                    bottomRight: Radius.circular(8.0),
+                    topRight: Radius.circular(68.0),
+                  ),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: FitnessAppTheme.grey.withOpacity(0.2),
+                      offset: const Offset(1.1, 1.1),
+                      blurRadius: 10.0,
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.orange,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Other',
+                            style: TextStyle(
+                              fontFamily: FitnessAppTheme.fontName,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                              color: FitnessAppTheme.nearlyDarkBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      _buildSettingItem(
+                        icon: Icons.info_outline,
+                        title: "About App",
+                        subtitle: "Version 1.0.0",
+                        color: Colors.orange,
+                      ),
+                      const Divider(height: 1, indent: 72),
+                      _buildSettingItem(
+                        icon: Icons.help_outline,
+                        title: "Help & Support",
+                        color: FitnessAppTheme.nearlyBlue,
+                      ),
+                      const Divider(height: 1, indent: 72),
+                      _buildSettingItem(
+                        icon: Icons.logout,
+                        title: "Logout",
+                        color: Colors.red,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -353,392 +790,42 @@ class _SettingsPageState extends State<SettingsPage>
     required IconData icon,
     required String title,
     String? subtitle,
-    Widget? trailing,
+    required Color color,
     VoidCallback? onTap,
-    Color? textColor,
-    Color? iconColor,
   }) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Material(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(_cardRadius),
-          elevation: 0,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(_cardRadius),
-            onTap: onTap,
-            splashColor: FitnessAppTheme.nearlyDarkBlue.withOpacity(0.1),
-            highlightColor: FitnessAppTheme.nearlyDarkBlue.withOpacity(0.05),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(_cardRadius),
-                border: Border.all(
-                  color: Colors.grey.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: (iconColor ?? FitnessAppTheme.nearlyDarkBlue)
-                          .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: iconColor ?? FitnessAppTheme.nearlyDarkBlue,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            color:
-                                textColor ??
-                                Theme.of(context).textTheme.titleMedium?.color,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                          ),
-                        ),
-                        if (subtitle != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (trailing != null) trailing,
-                  if (trailing == null && onTap != null)
-                    Icon(Icons.chevron_right, color: Colors.grey.shade400),
-                ],
-              ),
-            ),
-          ),
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 20, color: color),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontFamily: FitnessAppTheme.fontName,
+          fontWeight: FontWeight.w500,
+          fontSize: 16,
+          color: color == Colors.red ? color : FitnessAppTheme.nearlyDarkBlue,
         ),
       ),
-    );
-  }
-
-  void _showLogoutConfirmation() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(_dialogRadius),
-            ),
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(_avatarRadius),
-                    ),
-                    child: Icon(
-                      Icons.exit_to_app_rounded,
-                      size: 36,
-                      color: Colors.redAccent,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Logout Confirmation',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Are you sure you want to logout from your account?',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 28),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                _buttonRadius,
-                              ),
-                            ),
-                            side: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                _buttonRadius,
-                              ),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Logout',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-  }
-
-  void _showEditProfileDialog() {
-    final TextEditingController nameController = TextEditingController(
-      text: widget.patientName,
-    );
-    final TextEditingController ageController = TextEditingController(
-      text: widget.patientAge,
-    );
-    final TextEditingController conditionController = TextEditingController(
-      text: widget.patientCondition,
-    );
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(_dialogRadius),
-            ),
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Edit Profile',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: FitnessAppTheme.nearlyDarkBlue,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Stack(
-                      children: [
-                        Hero(
-                          tag: 'profile-avatar',
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(
-                                _avatarRadius,
-                              ),
-                              border: Border.all(
-                                color: FitnessAppTheme.nearlyDarkBlue
-                                    .withOpacity(0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                _avatarRadius,
-                              ),
-                              child: Container(
-                                color: Colors.white.withOpacity(0.2),
-                                child: Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: FitnessAppTheme.nearlyDarkBlue
-                                      .withOpacity(0.5),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () {},
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: FitnessAppTheme.nearlyDarkBlue,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.edit_rounded,
-                                size: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                        prefixIcon: const Icon(Icons.person_outline_rounded),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(_inputRadius),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(_inputRadius),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: ageController,
-                      decoration: InputDecoration(
-                        labelText: 'Age',
-                        prefixIcon: const Icon(Icons.calendar_today_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(_inputRadius),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(_inputRadius),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: conditionController,
-                      decoration: InputDecoration(
-                        labelText: 'Condition',
-                        prefixIcon: const Icon(Icons.medical_services_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(_inputRadius),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(_inputRadius),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  _buttonRadius,
-                                ),
-                              ),
-                              side: BorderSide(color: Colors.grey.shade300),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: FitnessAppTheme.nearlyDarkBlue,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  _buttonRadius,
-                                ),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              'Save Changes',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+      subtitle:
+          subtitle != null
+              ? Text(
+                subtitle,
+                style: TextStyle(
+                  fontFamily: FitnessAppTheme.fontName,
+                  fontSize: 12,
+                  color: FitnessAppTheme.grey,
                 ),
-              ),
-            ),
-          ),
+              )
+              : null,
+      trailing: Icon(Icons.keyboard_arrow_right, color: FitnessAppTheme.grey),
+      onTap: onTap,
     );
   }
 }

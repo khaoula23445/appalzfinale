@@ -67,7 +67,9 @@ class _SafeZonePageState extends State<SafeZonePage> {
       // Permissions are denied forever
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Location permissions are permanently denied. Please enable them in app settings.'),
+          content: Text(
+            'Location permissions are permanently denied. Please enable them in app settings.',
+          ),
           backgroundColor: _accentColor,
         ),
       );
@@ -79,40 +81,47 @@ class _SafeZonePageState extends State<SafeZonePage> {
     Position position = await Geolocator.getCurrentPosition();
     setState(() {
       _currentPosition = LatLng(position.latitude, position.longitude);
-      
+
       // Add a sample safe zone around current location (500m radius)
       _safeZones = [
         SafeZone(
           name: "Home Area",
           points: _createCircularZone(
-            _currentPosition!, 
-            radiusInMeters: 500, 
-            points: 12
+            _currentPosition!,
+            radiusInMeters: 500,
+            points: 12,
           ),
           isActive: true,
         ),
       ];
     });
-    
+
     // Center map on current location
     _mapController.move(_currentPosition!, 15.0);
   }
 
-  List<LatLng> _createCircularZone(LatLng center, {required double radiusInMeters, required int points}) {
+  List<LatLng> _createCircularZone(
+    LatLng center, {
+    required double radiusInMeters,
+    required int points,
+  }) {
     List<LatLng> zonePoints = [];
     for (int i = 0; i < points; i++) {
       double angle = 2 * pi * i / points;
       // Convert meters to degrees (approximate)
       double latOffset = (radiusInMeters / 111320) * cos(angle);
-      double lngOffset = (radiusInMeters / 111320) * sin(angle) / cos(center.latitude * pi / 180);
-      
-      zonePoints.add(LatLng(
-        center.latitude + latOffset,
-        center.longitude + lngOffset,
-      ));
+      double lngOffset =
+          (radiusInMeters / 111320) *
+          sin(angle) /
+          cos(center.latitude * pi / 180);
+
+      zonePoints.add(
+        LatLng(center.latitude + latOffset, center.longitude + lngOffset),
+      );
     }
     return zonePoints;
   }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -151,8 +160,8 @@ class _SafeZonePageState extends State<SafeZonePage> {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.alzheimer_app',
                 ),
+
                 // Draw current position marker
-                
                 if (_currentPosition != null)
                   MarkerLayer(
                     markers: [
@@ -180,7 +189,7 @@ class _SafeZonePageState extends State<SafeZonePage> {
                               isFilled: true,
                             ),
                           )
-                      .toList(),
+                          .toList(),
                 ),
                 // Draw current zone being created
                 if (_isDrawingZone && _currentZonePoints.length > 1)
@@ -241,10 +250,7 @@ class _SafeZonePageState extends State<SafeZonePage> {
             });
           },
           items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
             BottomNavigationBarItem(
               icon: Icon(Icons.notifications),
               label: 'Alerts',
@@ -462,5 +468,3 @@ class SafeZone {
 
   SafeZone({required this.name, required this.points, this.isActive = true});
 }
-
-

@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">alzheimer_app</string>
+
+    <!-- Ajoute cette ligne avec ton vrai Web Client ID (trouvé dans google-services.json) -->
+    <string name="default_web_client_id">1234567890-abc123def456.apps.googleusercontent.com</string>
+</resources>

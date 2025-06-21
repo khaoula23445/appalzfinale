@@ -45,9 +45,10 @@ class _BraceletPairingPageState extends State<BraceletPairingPage> {
   void _validateCode(String code) async {
     // Simulate API call to validate code and fetch patient data
     await Future.delayed(const Duration(seconds: 1));
-    
+
     // This would be replaced with actual API call
-    if (code.startsWith('ALZBR')) { // Sample validation
+    if (code.startsWith('ALZBR')) {
+      // Sample validation
       setState(() {
         isValidCode = true;
         patientData = {
@@ -56,7 +57,7 @@ class _BraceletPairingPageState extends State<BraceletPairingPage> {
           'condition': 'Moderate Alzheimer',
           'contact': '+213123456789',
           'braceletId': code,
-          'lastLocation': '36.7525, 3.0420' // Algiers coordinates
+          'lastLocation': '36.7525, 3.0420', // Algiers coordinates
         };
       });
     } else {
@@ -107,14 +108,8 @@ class _BraceletPairingPageState extends State<BraceletPairingPage> {
       ),
       body: Column(
         children: [
-          Expanded(
-            flex: 5,
-            child: _buildScannerView(),
-          ),
-          Expanded(
-            flex: patientData != null ? 4 : 2,
-            child: _buildInfoPanel(),
-          ),
+          Expanded(flex: 5, child: _buildScannerView()),
+          Expanded(flex: patientData != null ? 4 : 2, child: _buildInfoPanel()),
         ],
       ),
     );
@@ -232,11 +227,7 @@ class _BraceletPairingPageState extends State<BraceletPairingPage> {
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
-            Icon(
-              Icons.arrow_downward,
-              size: 40,
-              color: _primaryColor,
-            ),
+            Icon(Icons.arrow_downward, size: 40, color: _primaryColor),
           ],
         ],
       ),
@@ -248,10 +239,7 @@ class _BraceletPairingPageState extends State<BraceletPairingPage> {
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(value),
         ],
       ),
