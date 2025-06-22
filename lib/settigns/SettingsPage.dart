@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:alzheimer_app/alzhimer_home/alzhimer_app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsPage extends StatefulWidget {
   final AnimationController? animationController;
@@ -125,158 +126,74 @@ class _SettingsPageState extends State<SettingsPage>
     }
   }
 
+  Future<void> _logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+
+      // Navigate to login page and clear all previous routes
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/login', // Replace with your actual login route name
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error during logout: $e')));
+    }
+  }
+
   void _showPatientInfoDialog() {
     if (patientData == null) return;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: FitnessAppTheme.white,
-              shape: BoxShape.rectangle,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
+        return AlertDialog(
+          title: const Text('Patient Information'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Patient Information',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: FitnessAppTheme.nearlyDarkBlue,
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.close, color: FitnessAppTheme.grey),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
+                  _buildEditableField('Full Name', _fullNameController),
+                  _buildEditableField('Age', _ageController, isNumber: true),
+                  _buildEditableField('Location', _locationController),
+                  _buildEditableField('Medical Notes', _medicalNotesController),
+                  _buildEditableField('Bracelet ID', _braceletIdController),
+                  _buildReadOnlyField(
+                    'Created At',
+                    patientData!['createdAt'] != null
+                        ? DateFormat('dd MMM yyyy').format(
+                          (patientData!['createdAt'] as Timestamp).toDate(),
+                        )
+                        : 'N/A',
                   ),
-                  const SizedBox(height: 16),
-
-                  // Form Content
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildEditableField('Full Name', _fullNameController),
-                        const SizedBox(height: 12),
-                        _buildEditableField(
-                          'Age',
-                          _ageController,
-                          isNumber: true,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildEditableField('Location', _locationController),
-                        const SizedBox(height: 12),
-                        _buildEditableField(
-                          'Medical Notes',
-                          _medicalNotesController,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildEditableField(
-                          'Bracelet ID',
-                          _braceletIdController,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildReadOnlyField(
-                          'Created At',
-                          patientData!['createdAt'] != null
-                              ? DateFormat('dd MMM yyyy').format(
-                                (patientData!['createdAt'] as Timestamp)
-                                    .toDate(),
-                              )
-                              : 'N/A',
-                        ),
-                        if (patientData!['updatedAt'] != null) ...[
-                          const SizedBox(height: 12),
-                          _buildReadOnlyField(
-                            'Last Updated',
-                            DateFormat('dd MMM yyyy').format(
-                              (patientData!['updatedAt'] as Timestamp).toDate(),
-                            ),
-                          ),
-                        ],
-                      ],
+                  if (patientData!['updatedAt'] != null)
+                    _buildReadOnlyField(
+                      'Last Updated',
+                      DateFormat('dd MMM yyyy').format(
+                        (patientData!['updatedAt'] as Timestamp).toDate(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Action Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: FitnessAppTheme.grey,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: _updatePatientData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: FitnessAppTheme.nearlyDarkBlue,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 2,
-                        ),
-                        child: const Text(
-                          'Save Changes',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: _updatePatientData,
+              child: const Text('Save'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FitnessAppTheme.nearlyDarkBlue,
+              ),
+            ),
+          ],
         );
       },
     );
@@ -287,72 +204,53 @@ class _SettingsPageState extends State<SettingsPage>
     TextEditingController controller, {
     bool isNumber = false,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: FitnessAppTheme.nearlyDarkBlue,
-            fontWeight: FontWeight.w500,
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
         ),
-        const SizedBox(height: 4),
-        TextFormField(
-          controller: controller,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey[100],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
-          style: TextStyle(color: FitnessAppTheme.darkerText, fontSize: 16),
-          keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter $label';
-            }
-            if (isNumber && int.tryParse(value) == null) {
-              return 'Please enter a valid number';
-            }
-            return null;
-          },
-        ),
-      ],
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter $label';
+          }
+          if (isNumber && int.tryParse(value) == null) {
+            return 'Please enter a valid number';
+          }
+          return null;
+        },
+      ),
     );
   }
 
   Widget _buildReadOnlyField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: FitnessAppTheme.nearlyDarkBlue,
-            fontWeight: FontWeight.w500,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: FitnessAppTheme.nearlyDarkBlue,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
+          const SizedBox(height: 4),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(value),
           ),
-          child: Text(
-            value,
-            style: TextStyle(color: FitnessAppTheme.darkerText, fontSize: 16),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -774,6 +672,7 @@ class _SettingsPageState extends State<SettingsPage>
                         icon: Icons.logout,
                         title: "Logout",
                         color: Colors.red,
+                        onTap: _logout,
                       ),
                     ],
                   ),

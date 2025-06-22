@@ -2,15 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   Future<void> _signInWithGoogle(BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     try {
+      // Show loading SnackBar
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text("Signing in with Google..."),
+          duration: Duration(minutes: 1), // Will be closed manually
+        ),
+      );
+
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
           const SnackBar(content: Text("Google sign in canceled.")),
         );
         return;
@@ -29,7 +41,6 @@ class WelcomeScreen extends StatelessWidget {
 
       final user = userCredential.user;
       if (user != null) {
-        // Save to Firestore if not already added
         final usersRef = FirebaseFirestore.instance.collection('Users');
         final doc = await usersRef.doc(user.uid).get();
         if (!doc.exists) {
@@ -39,140 +50,132 @@ class WelcomeScreen extends StatelessWidget {
             'createdAt': FieldValue.serverTimestamp(),
           });
         }
-
+        scaffoldMessenger.hideCurrentSnackBar();
         Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Google sign in failed: $e")));
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text("Google sign in failed: $e")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFE6F0FA), Color(0xFF1E3A8A)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.watch, size: 60, color: Colors.white),
-              const SizedBox(height: 10),
-              const Text(
-                "Maah Bracelet",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 60),
-              const Text(
-                "Welcome Back",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 30),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 50),
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/login');
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    side: const BorderSide(color: Colors.white),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      "SIGN IN",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 50),
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/signup');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      "SIGN UP",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 50),
-              const Text(
-                "Login with Social Media",
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 15),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap:
-                        () => _signInWithGoogle(
-                          context,
-                        ), // This triggers the Google sign-in UI
-                    child: const Icon(
-                      Icons.email,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
+    const darkBlue = Color(0xFF0D47A1);
 
-                  const SizedBox(width: 30),
-                  GestureDetector(
-                    onTap: () {
-                      // TODO: Implement Apple/iCloud Sign-In
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset('assets/background.png', fit: BoxFit.cover),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset('assets/logo.png', width: 120, height: 120),
+                const SizedBox(height: 10),
+                Text(
+                  "AlzMate",
+                  style: GoogleFonts.outfit(
+                    color: darkBlue,
+                    fontSize: 22,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 60),
+                Text(
+                  "Welcome Back",
+                  style: GoogleFonts.outfit(
+                    color: darkBlue,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/login');
                     },
-                    child: const Icon(
-                      Icons.apple,
-                      color: Colors.white,
-                      size: 34,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      side: const BorderSide(color: darkBlue),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        "SIGN IN",
+                        style: GoogleFonts.outfit(
+                          color: darkBlue,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 15),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/signup');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: darkBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        "SIGN UP",
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 50),
+                Text(
+                  "Login with Social Media",
+                  style: GoogleFonts.outfit(
+                    color: darkBlue,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: () => _signInWithGoogle(context),
+                      child: const Icon(Icons.email, color: darkBlue, size: 30),
+                    ),
+                    const SizedBox(width: 30),
+                    GestureDetector(
+                      onTap: () {
+                        // Future implementation: Apple sign-in
+                      },
+                      child: const Icon(Icons.apple, color: darkBlue, size: 34),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
